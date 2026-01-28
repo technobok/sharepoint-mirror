@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Sync Run - SharePoint Mirror{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ul>
+        <li><a href="{{ url_for('sync.index') }}">Sync History</a></li>
+        <li>Run #{{ run.id }}</li>
+    </ul>
+</nav>
+
+<article>
+    <header>
+        <h1>Sync Run #{{ run.id }}</h1>
+        <p>
+            <span class="status-badge status-{{ run.status }}">{{ run.status }}</span>
+            {% if run.is_full_sync %}
+            <span class="status-badge status-info">Full Sync</span>
+            {% endif %}
+        </p>
+    </header>
+
+    <div class="grid">
+        <div>
+            <dl>
+                <dt>Started</dt>
+                <dd>{{ run.started_at|localdatetime }}</dd>
+
+                <dt>Completed</dt>
+                <dd>{{ run.completed_at|localdatetime if run.completed_at else '-' }}</dd>
+
+                {% if run.error_message %}
+                <dt>Error</dt>
+                <dd class="error-message">{{ run.error_message }}</dd>
+                {% endif %}
+            </dl>
+        </div>
+        <div>
+            <dl>
+                <dt>Files Added</dt>
+                <dd>{{ run.files_added }}</dd>
+
+                <dt>Files Modified</dt>
+                <dd>{{ run.files_modified }}</dd>
+
+                <dt>Files Removed</dt>
+                <dd>{{ run.files_removed }}</dd>
+
+                <dt>Files Unchanged</dt>
+                <dd>{{ run.files_unchanged }}</dd>
+
+                <dt>Files Skipped</dt>
+                <dd>{{ run.files_skipped }}</dd>
+
+                <dt>Downloaded</dt>
+                <dd>{{ run.bytes_downloaded|filesize }}</dd>
+            </dl>
+        </div>
+    </div>
+</article>
+
+{% if events %}
+<h2>Events</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Time</th>
+            <th>Type</th>
+            <th>Name</th>
+            <th>Path</th>
+            <th>Size</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for event in events %}
+        <tr>
+            <td><small>{{ event.logged_at|localdatetime }}</small></td>
+            <td>
+                <span class="event-type event-{{ event.event_type }}">
+                    {{ event.event_type }}
+                </span>
+            </td>
+            <td>
+                {% if event.document_id %}
+                <a href="{{ url_for('documents.view', doc_id=event.document_id) }}">
+                    {{ event.name }}
+                </a>
+                {% else %}
+                {{ event.name }}
+                {% endif %}
+            </td>
+            <td><small>{{ event.path }}</small></td>
+            <td>{{ event.file_size|filesize if event.file_size else '-' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No events recorded for this sync run.</p>
+{% endif %}
+{% endblock %}

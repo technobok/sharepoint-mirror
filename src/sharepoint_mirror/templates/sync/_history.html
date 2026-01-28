@@ -1,0 +1,36 @@
+{% if runs %}
+<table>
+    <thead>
+        <tr>
+            <th>Started</th>
+            <th>Completed</th>
+            <th>Status</th>
+            <th>Type</th>
+            <th>Added</th>
+            <th>Modified</th>
+            <th>Removed</th>
+            <th>Downloaded</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for run in runs %}
+        <tr>
+            <td>
+                <a href="{{ url_for('sync.view', run_id=run.id) }}">
+                    {{ run.started_at|localdatetime }}
+                </a>
+            </td>
+            <td>{{ run.completed_at|localdatetime if run.completed_at else '-' }}</td>
+            <td><span class="status-badge status-{{ run.status }}">{{ run.status }}</span></td>
+            <td>{{ 'Full' if run.is_full_sync else 'Delta' }}</td>
+            <td>{{ run.files_added }}</td>
+            <td>{{ run.files_modified }}</td>
+            <td>{{ run.files_removed }}</td>
+            <td>{{ run.bytes_downloaded|filesize }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p class="no-results">No sync runs yet. Click "Sync Now" to start synchronizing.</p>
+{% endif %}

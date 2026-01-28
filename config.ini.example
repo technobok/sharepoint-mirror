@@ -1,0 +1,43 @@
+[server]
+SECRET_KEY = change-this-to-a-random-string
+DEBUG = False
+# Production settings (make run)
+HOST = 0.0.0.0
+PORT = 5001
+# Development settings (make rundev)
+DEV_HOST = 127.0.0.1
+DEV_PORT = 5001
+
+[database]
+PATH = instance/sharepoint_mirror.sqlite3
+
+[blobs]
+DIRECTORY = instance/blobs
+
+[sharepoint]
+# Azure AD App Registration credentials
+TENANT_ID = your-tenant-id
+CLIENT_ID = your-client-id
+CLIENT_SECRET = your-client-secret
+# SharePoint site to mirror
+SITE_HOSTNAME = contoso.sharepoint.com
+SITE_PATH = /sites/Documents
+# Optional: specific document library name (defaults to all libraries)
+# LIBRARY_NAME = Documents
+
+[sync]
+# Download timeout in seconds
+DOWNLOAD_TIMEOUT = 300
+# Maximum file size in MB (files larger than this will be skipped)
+MAX_FILE_SIZE_MB = 100
+# File extensions to include (comma-separated, empty = all)
+# INCLUDE_EXTENSIONS = .pdf,.docx,.xlsx,.pptx
+# File extensions to exclude (comma-separated)
+# EXCLUDE_EXTENSIONS = .exe,.zip
+
+# Enable when running behind a reverse proxy (Caddy, nginx, etc.)
+#[proxy]
+#X_FORWARDED_FOR = 1
+#X_FORWARDED_PROTO = 1
+#X_FORWARDED_HOST = 1
+#X_FORWARDED_PREFIX = 0

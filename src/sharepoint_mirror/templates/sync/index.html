@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Sync History - SharePoint Mirror{% endblock %}
+
+{% block content %}
+<div class="sync-page">
+    <header>
+        <hgroup>
+            <h1>Sync History</h1>
+            <p>SharePoint synchronization runs</p>
+        </hgroup>
+        <div class="sync-actions">
+            <form action="{{ url_for('sync.trigger') }}" method="post" style="display:inline">
+                <button type="submit" {% if current_run %}disabled{% endif %}>
+                    {% if current_run %}Sync in Progress...{% else %}Sync Now{% endif %}
+                </button>
+            </form>
+            <form action="{{ url_for('sync.trigger') }}" method="post" style="display:inline">
+                <input type="hidden" name="full" value="1">
+                <button type="submit" class="outline" {% if current_run %}disabled{% endif %}>
+                    Full Sync
+                </button>
+            </form>
+        </div>
+    </header>
+
+    {% if current_run %}
+    <article class="sync-running" aria-busy="true"
+             hx-get="{{ url_for('sync.status') }}"
+             hx-trigger="every 5s"
+             hx-swap="outerHTML">
+        <p>Sync in progress since {{ current_run.started_at|localdatetime }}...</p>
+    </article>
+    {% endif %}
+
+    <div id="sync-history">
+        {% include "sync/_history.html" %}
+    </div>
+</div>
+{% endblock %}

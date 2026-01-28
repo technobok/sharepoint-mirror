@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Documents - SharePoint Mirror{% endblock %}
+
+{% block content %}
+<div class="documents-page">
+    <header>
+        <hgroup>
+            <h1>Documents</h1>
+            <p>{{ total }} synchronized document(s)</p>
+        </hgroup>
+    </header>
+
+    <div class="search-box">
+        <input type="search"
+               name="search"
+               placeholder="Search by name or path..."
+               value="{{ search }}"
+               hx-get="{{ url_for('documents.search') }}"
+               hx-trigger="input changed delay:300ms, search"
+               hx-target="#document-list"
+               hx-swap="innerHTML"
+               hx-vals='{"q": this.value}'>
+    </div>
+
+    <div id="document-list">
+        {% include "documents/_list.html" %}
+    </div>
+</div>
+{% endblock %}

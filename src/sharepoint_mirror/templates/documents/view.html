@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}{{ document.name }} - SharePoint Mirror{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ul>
+        <li><a href="{{ url_for('documents.index') }}">Documents</a></li>
+        <li>{{ document.name }}</li>
+    </ul>
+</nav>
+
+<article>
+    <header>
+        <h1>{{ document.name }}</h1>
+        <p><small>{{ document.path }}</small></p>
+    </header>
+
+    <div class="grid">
+        <div>
+            <dl>
+                <dt>File Size</dt>
+                <dd>{{ document.file_size|filesize if document.file_size else '-' }}</dd>
+
+                <dt>MIME Type</dt>
+                <dd>{{ document.mime_type or '-' }}</dd>
+
+                <dt>Created By</dt>
+                <dd>{{ document.created_by or '-' }}</dd>
+
+                <dt>Last Modified By</dt>
+                <dd>{{ document.last_modified_by or '-' }}</dd>
+            </dl>
+        </div>
+        <div>
+            <dl>
+                <dt>SharePoint Created</dt>
+                <dd>{{ document.sharepoint_created_at|localdatetime if document.sharepoint_created_at else '-' }}</dd>
+
+                <dt>SharePoint Modified</dt>
+                <dd>{{ document.sharepoint_modified_at|localdatetime if document.sharepoint_modified_at else '-' }}</dd>
+
+                <dt>Synced At</dt>
+                <dd>{{ document.synced_at|localdatetime }}</dd>
+
+                <dt>SharePoint URL</dt>
+                <dd>
+                    {% if document.web_url %}
+                    <a href="{{ document.web_url }}" target="_blank" rel="noopener">Open in SharePoint</a>
+                    {% else %}
+                    -
+                    {% endif %}
+                </dd>
+            </dl>
+        </div>
+    </div>
+
+    {% if blob %}
+    <div class="blob-info">
+        <h3>Storage</h3>
+        <dl>
+            <dt>SHA256 Hash</dt>
+            <dd><code>{{ blob.sha256_hash }}</code></dd>
+
+            <dt>Stored Size</dt>
+            <dd>{{ blob.file_size|filesize }}</dd>
+
+            <dt>Reference Count</dt>
+            <dd>{{ blob.reference_count }}</dd>
+        </dl>
+    </div>
+    {% endif %}
+
+    <footer>
+        <div class="button-group">
+            <a href="{{ url_for('documents.download', doc_id=document.id) }}"
+               role="button">
+                Download
+            </a>
+
+            {% if document.mime_type == 'application/pdf' %}
+            <a href="{{ url_for('viewer.pdf', doc_id=document.id) }}"
+               role="button"
+               class="outline">
+                View PDF
+            </a>
+            {% elif document.mime_type and document.mime_type.startswith('text/') %}
+            <a href="{{ url_for('viewer.text', doc_id=document.id) }}"
+               role="button"
+               class="outline">
+                View Text
+            </a>
+            {% endif %}
+        </div>
+    </footer>
+</article>
+{% endblock %}

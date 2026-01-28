@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}{{ document.name }} - Text Viewer{% endblock %}
+
+{% block head %}
+<style>
+    .text-content {
+        background: var(--pico-code-background-color);
+        padding: 1rem;
+        border-radius: var(--pico-border-radius);
+        overflow-x: auto;
+        white-space: pre-wrap;
+        font-family: var(--pico-font-family-monospace);
+        font-size: 0.9rem;
+        line-height: 1.5;
+        max-height: calc(100vh - 300px);
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ul>
+        <li><a href="{{ url_for('documents.index') }}">Documents</a></li>
+        <li><a href="{{ url_for('documents.view', doc_id=document.id) }}">{{ document.name }}</a></li>
+        <li>Text Viewer</li>
+    </ul>
+</nav>
+
+<article>
+    <header>
+        <h1>{{ document.name }}</h1>
+        <div>
+            <a href="{{ url_for('documents.download', doc_id=document.id) }}"
+               role="button"
+               class="outline small">
+                Download
+            </a>
+        </div>
+    </header>
+
+    <div class="text-content">{{ content }}</div>
+</article>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - SharePoint Mirror{% endblock %}
+
+{% block content %}
+<hgroup>
+    <h1>Dashboard</h1>
+    <p>SharePoint document synchronization status</p>
+</hgroup>
+
+<div class="grid">
+    <article>
+        <header>Documents</header>
+        <p>
+            <strong>{{ stats.total_documents }}</strong> files<br>
+            <small>{{ stats.total_size|filesize }} total</small>
+        </p>
+        <footer>
+            <a href="{{ url_for('documents.index') }}" role="button" class="outline">Browse</a>
+        </footer>
+    </article>
+
+    <article>
+        <header>Last Sync</header>
+        {% if stats.last_sync %}
+        <p>
+            <span class="status-badge status-{{ stats.last_sync.status }}">{{ stats.last_sync.status }}</span><br>
+            <small>{{ stats.last_sync.completed_at|localdatetime if stats.last_sync.completed_at else stats.last_sync.started_at|localdatetime }}</small>
+        </p>
+        <p>
+            <small>
+                +{{ stats.last_sync.files_added }} added,
+                ~{{ stats.last_sync.files_modified }} modified,
+                -{{ stats.last_sync.files_removed }} removed
+            </small>
+        </p>
+        {% else %}
+        <p><em>No syncs yet</em></p>
+        {% endif %}
+        <footer>
+            <a href="{{ url_for('sync.index') }}" role="button" class="outline">History</a>
+        </footer>
+    </article>
+
+    <article>
+        <header>Actions</header>
+        <p>Synchronize documents from SharePoint</p>
+        <footer>
+            <form action="{{ url_for('sync.trigger') }}" method="post" style="display:inline">
+                <button type="submit">Sync Now</button>
+            </form>
+        </footer>
+    </article>
+</div>
+
+{% if stats.recent_syncs %}
+<h2>Recent Syncs</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Started</th>
+            <th>Status</th>
+            <th>Added</th>
+            <th>Modified</th>
+            <th>Removed</th>
+            <th>Downloaded</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for run in stats.recent_syncs %}
+        <tr>
+            <td>
+                <a href="{{ url_for('sync.view', run_id=run.id) }}">
+                    {{ run.started_at|localdatetime }}
+                </a>
+            </td>
+            <td><span class="status-badge status-{{ run.status }}">{{ run.status }}</span></td>
+            <td>{{ run.files_added }}</td>
+            <td>{{ run.files_modified }}</td>
+            <td>{{ run.files_removed }}</td>
+            <td>{{ run.bytes_downloaded|filesize }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+{% endblock %}

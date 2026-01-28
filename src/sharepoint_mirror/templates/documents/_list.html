@@ -1,0 +1,38 @@
+{% if documents %}
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Path</th>
+            <th>Size</th>
+            <th>Type</th>
+            <th>Synced</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for doc in documents %}
+        <tr>
+            <td>
+                <a href="{{ url_for('documents.view', doc_id=doc.id) }}">
+                    {{ doc.name }}
+                </a>
+            </td>
+            <td><small>{{ doc.path }}</small></td>
+            <td>{{ doc.file_size|filesize if doc.file_size else '-' }}</td>
+            <td><small>{{ doc.mime_type or '-' }}</small></td>
+            <td><small>{{ doc.synced_at|localdate }}</small></td>
+            <td>
+                <a href="{{ url_for('documents.download', doc_id=doc.id) }}"
+                   role="button"
+                   class="outline small">
+                    Download
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p class="no-results">No documents found.</p>
+{% endif %}

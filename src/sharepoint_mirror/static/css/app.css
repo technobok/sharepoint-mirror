@@ -1,0 +1,325 @@
+/* SharePoint Mirror custom styles - compact and utilitarian */
+
+/* Make Pico more compact */
+:root {
+    --pico-font-size: 15px;
+    --pico-line-height: 1.4;
+    --pico-spacing: 0.75rem;
+    --pico-form-element-spacing-vertical: 0.5rem;
+    --pico-form-element-spacing-horizontal: 0.75rem;
+}
+
+/* Tighter nav */
+header nav {
+    padding: 0.5rem 0;
+}
+
+header nav ul li {
+    padding: 0.25rem 0.5rem;
+}
+
+.brand {
+    font-size: 1.1rem;
+}
+
+/* Compact buttons */
+[role="button"],
+button,
+input[type="submit"],
+input[type="button"] {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+}
+
+/* Small buttons */
+.small,
+button.small,
+[role="button"].small {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+/* Compact form elements */
+input,
+select,
+textarea {
+    padding: 0.4rem 0.6rem;
+}
+
+/* Compact tables */
+table th,
+table td {
+    padding: 0.5rem 0.75rem;
+}
+
+/* Flash messages */
+.flash {
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    border-radius: var(--pico-border-radius);
+}
+
+.flash-error {
+    background: var(--pico-del-color);
+    color: white;
+}
+
+.flash-success {
+    background: var(--pico-ins-color);
+    color: white;
+}
+
+.flash-info {
+    background: var(--pico-primary);
+    color: white;
+}
+
+/* Theme toggle button */
+#theme-toggle {
+    padding: 0.3rem 0.5rem;
+    min-width: auto;
+    border: none;
+    background: transparent;
+}
+
+#theme-toggle:hover {
+    background: var(--pico-secondary-hover-background);
+}
+
+/* Footer */
+footer {
+    margin-top: 2rem;
+    padding: 1rem 0;
+    border-top: 1px solid var(--pico-muted-border-color);
+}
+
+footer small {
+    color: var(--pico-muted-color);
+}
+
+/* HTMX loading indicator */
+.htmx-request {
+    opacity: 0.7;
+    transition: opacity 200ms;
+}
+
+.htmx-request .htmx-indicator {
+    display: inline-block;
+}
+
+.htmx-indicator {
+    display: none;
+}
+
+/* Status badges */
+.status-badge {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.status-running {
+    background: #f59e0b;
+    color: white;
+}
+
+.status-completed {
+    background: var(--pico-ins-color);
+    color: white;
+}
+
+.status-failed {
+    background: var(--pico-del-color);
+    color: white;
+}
+
+.status-info {
+    background: var(--pico-primary);
+    color: white;
+}
+
+/* Event type badges */
+.event-type {
+    display: inline-block;
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.event-add {
+    background: var(--pico-ins-color);
+    color: white;
+}
+
+.event-remove {
+    background: var(--pico-del-color);
+    color: white;
+}
+
+.event-modify_add,
+.event-modify_remove {
+    background: #f59e0b;
+    color: white;
+}
+
+/* Page headers */
+.documents-page header,
+.sync-page header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.documents-page header hgroup,
+.sync-page header hgroup {
+    margin-bottom: 0;
+}
+
+/* Search box */
+.search-box {
+    margin-bottom: 1rem;
+}
+
+.search-box input {
+    margin-bottom: 0;
+}
+
+/* No results message */
+.no-results {
+    padding: 2rem;
+    text-align: center;
+    color: var(--pico-muted-color);
+}
+
+/* Button group */
+.button-group {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+/* Sync actions */
+.sync-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Sync status articles */
+.sync-running {
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+}
+
+.sync-complete {
+    background: #d1fae5;
+    border-left: 4px solid var(--pico-ins-color);
+}
+
+.sync-error {
+    background: #fee2e2;
+    border-left: 4px solid var(--pico-del-color);
+}
+
+/* Error message */
+.error-message {
+    color: var(--pico-del-color);
+    font-family: var(--pico-font-family-monospace);
+    font-size: 0.9rem;
+}
+
+/* Blob info */
+.blob-info {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--pico-card-background-color);
+    border-radius: var(--pico-border-radius);
+}
+
+.blob-info h3 {
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+}
+
+.blob-info dl {
+    margin: 0;
+}
+
+.blob-info dt {
+    font-weight: 500;
+    margin-top: 0.5rem;
+}
+
+.blob-info dd {
+    margin-left: 0;
+    color: var(--pico-muted-color);
+}
+
+.blob-info code {
+    font-size: 0.85rem;
+    word-break: break-all;
+}
+
+/* Definition lists */
+dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.25rem 1rem;
+}
+
+dt {
+    font-weight: 500;
+    color: var(--pico-muted-color);
+}
+
+dd {
+    margin: 0;
+}
+
+/* Dashboard grid */
+.grid article {
+    margin-bottom: 0;
+}
+
+.grid article header {
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid var(--pico-muted-border-color);
+    font-weight: 600;
+}
+
+.grid article footer {
+    padding-top: 0.5rem;
+    margin-top: auto;
+}
+
+/* Breadcrumb nav */
+nav[aria-label="breadcrumb"] {
+    margin-bottom: 1rem;
+}
+
+nav[aria-label="breadcrumb"] ul {
+    padding: 0;
+    margin: 0;
+}
+
+nav[aria-label="breadcrumb"] li {
+    display: inline;
+    padding: 0;
+}
+
+nav[aria-label="breadcrumb"] li:not(:last-child)::after {
+    content: " / ";
+    color: var(--pico-muted-color);
+    margin: 0 0.5rem;
+}
+
+nav[aria-label="breadcrumb"] li:last-child {
+    color: var(--pico-muted-color);
+}

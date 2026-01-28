@@ -1,0 +1,37 @@
+{% if error %}
+<article class="sync-error">
+    <p>Error: {{ error }}</p>
+</article>
+{% elif success and run %}
+<article class="sync-complete">
+    <p>Sync completed successfully!</p>
+    <p>
+        Added: {{ run.files_added }},
+        Modified: {{ run.files_modified }},
+        Removed: {{ run.files_removed }}
+    </p>
+    <a href="{{ url_for('sync.view', run_id=run.id) }}">View Details</a>
+</article>
+{% elif status %}
+{% if status.is_running %}
+<article class="sync-running" aria-busy="true"
+         hx-get="{{ url_for('sync.status') }}"
+         hx-trigger="every 5s"
+         hx-swap="outerHTML">
+    <p>Sync in progress...</p>
+</article>
+{% else %}
+<article>
+    <p>
+        <strong>{{ status.total_documents }}</strong> documents,
+        <strong>{{ status.total_size|filesize }}</strong> total
+    </p>
+    {% if status.last_completed_run %}
+    <p>
+        Last sync: {{ status.last_completed_run.completed_at|localdatetime }}
+        ({{ status.last_completed_run.status }})
+    </p>
+    {% endif %}
+</article>
+{% endif %}
+{% endif %}
