@@ -73,6 +73,7 @@
 
     <footer>
         <div class="button-group">
+            {% if blob %}
             <a href="{{ url_for('documents.download', doc_id=document.id) }}"
                role="button">
                 Download
@@ -90,6 +91,9 @@
                class="outline">
                 View Text
             </a>
+            {% endif %}
+            {% else %}
+            <p><small>File content not available (metadata-only sync)</small></p>
             {% endif %}
         </div>
     </footer>

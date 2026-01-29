@@ -56,6 +56,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         SYNC_EXCLUDE_EXTENSIONS="",
         SYNC_INCLUDE_PATHS="",
         SYNC_PATH_PATTERNS="",
+        SYNC_METADATA_ONLY=False,
         SYNC_VERIFY_QUICKXOR_HASH=False,
     )
 
@@ -132,6 +133,9 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                 )
                 app.config["SYNC_INCLUDE_PATHS"] = config.get("sync", "INCLUDE_PATHS", fallback="")
                 app.config["SYNC_PATH_PATTERNS"] = config.get("sync", "PATH_PATTERNS", fallback="")
+                app.config["SYNC_METADATA_ONLY"] = config.getboolean(
+                    "sync", "METADATA_ONLY", fallback=False
+                )
                 app.config["SYNC_VERIFY_QUICKXOR_HASH"] = config.getboolean(
                     "sync", "VERIFY_QUICKXOR_HASH", fallback=False
                 )
@@ -151,6 +155,12 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                 )
     else:
         app.config.from_mapping(test_config)
+
+    # Validate configuration
+    if app.config["SYNC_METADATA_ONLY"] and app.config["SYNC_VERIFY_QUICKXOR_HASH"]:
+        raise ValueError(
+            "Configuration error: METADATA_ONLY and VERIFY_QUICKXOR_HASH cannot both be enabled."
+        )
 
     # Ensure directories exist
     instance_path.mkdir(parents=True, exist_ok=True)

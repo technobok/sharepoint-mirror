@@ -55,6 +55,7 @@ class SyncService:
         self.path_patterns = self._parse_path_patterns(
             current_app.config.get("SYNC_PATH_PATTERNS", "")
         )
+        self.metadata_only = current_app.config.get("SYNC_METADATA_ONLY", False)
         self.verify_quickxor = current_app.config.get("SYNC_VERIFY_QUICKXOR_HASH", False)
 
     def _parse_extensions(self, ext_string: str) -> set[str]:
@@ -426,6 +427,35 @@ class SyncService:
         stats: SyncStats,
     ) -> None:
         """Add a new document."""
+        if self.metadata_only:
+            doc = Document.create(
+                sharepoint_item_id=item.id,
+                sharepoint_drive_id=drive_id,
+                name=item.name,
+                path=item.path,
+                mime_type=item.mime_type,
+                file_size=item.size,
+                web_url=item.web_url,
+                created_by=item.created_by,
+                last_modified_by=item.last_modified_by,
+                sharepoint_created_at=item.created_at,
+                sharepoint_modified_at=item.modified_at,
+                quickxor_hash=item.quickxor_hash,
+                file_blob_id=None,
+            )
+            SyncEvent.create(
+                sync_run_id=sync_run.id,
+                event_type="add",
+                sharepoint_item_id=item.id,
+                name=item.name,
+                path=item.path,
+                document_id=doc.id,
+                file_size=item.size,
+                file_blob_id=None,
+            )
+            stats.added += 1
+            return
+
         # Download content
         if item.download_url:
             content = self.sharepoint.download_file_by_url(item.download_url)
@@ -490,6 +520,20 @@ class SyncService:
         stats: SyncStats,
     ) -> None:
         """Update an existing document."""
+        if self.metadata_only:
+            existing.update(
+                name=item.name,
+                path=item.path,
+                mime_type=item.mime_type,
+                file_size=item.size,
+                web_url=item.web_url,
+                last_modified_by=item.last_modified_by,
+                sharepoint_modified_at=item.modified_at,
+                quickxor_hash=item.quickxor_hash,
+            )
+            stats.modified += 1
+            return
+
         # Download new content
         if item.download_url:
             content = self.sharepoint.download_file_by_url(item.download_url)

@@ -48,6 +48,10 @@ MAX_FILE_SIZE_MB = 100
 #     *.docx
 #     !**/~$*
 #     !**/drafts/**
+# Metadata-only mode: record document metadata without downloading content.
+# Useful for exploring a SharePoint site before configuring path filters.
+# Cannot be used with VERIFY_QUICKXOR_HASH.
+# METADATA_ONLY = False
 # Verify downloaded file integrity using QuickXorHash from SharePoint metadata.
 # The hash is always stored regardless of this setting.
 # VERIFY_QUICKXOR_HASH = False

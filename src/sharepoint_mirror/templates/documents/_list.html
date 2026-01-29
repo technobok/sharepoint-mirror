@@ -23,11 +23,13 @@
             <td><small>{{ doc.mime_type or '-' }}</small></td>
             <td><small>{{ doc.synced_at|localdate }}</small></td>
             <td>
+                {% if doc.file_blob_id %}
                 <a href="{{ url_for('documents.download', doc_id=doc.id) }}"
                    role="button"
                    class="outline small">
                     Download
                 </a>
+                {% endif %}
             </td>
         </tr>
         {% endfor %}
