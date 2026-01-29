@@ -2,11 +2,14 @@
 
 import logging
 from dataclasses import dataclass, field
+from fnmatch import fnmatch
+from pathlib import PurePosixPath
 
 import magic
 from flask import current_app
 
 from sharepoint_mirror.models import DeltaToken, Document, FileBlob, SyncEvent, SyncRun
+from sharepoint_mirror.quickxorhash import quickxorhash
 from sharepoint_mirror.services.sharepoint import DriveItem, SharePointClient
 from sharepoint_mirror.services.storage import StorageService
 
@@ -46,12 +49,98 @@ class SyncService:
         self.exclude_extensions = self._parse_extensions(
             current_app.config.get("SYNC_EXCLUDE_EXTENSIONS", "")
         )
+        self.include_paths = self._parse_include_paths(
+            current_app.config.get("SYNC_INCLUDE_PATHS", "")
+        )
+        self.path_patterns = self._parse_path_patterns(
+            current_app.config.get("SYNC_PATH_PATTERNS", "")
+        )
+        self.verify_quickxor = current_app.config.get("SYNC_VERIFY_QUICKXOR_HASH", False)
 
     def _parse_extensions(self, ext_string: str) -> set[str]:
         """Parse comma-separated extensions string."""
         if not ext_string:
             return set()
         return {ext.strip().lower() for ext in ext_string.split(",") if ext.strip()}
+
+    def _parse_multiline(self, value: str) -> list[str]:
+        """Split a multi-line config value into trimmed, non-empty lines."""
+        return [line.strip() for line in value.splitlines() if line.strip()]
+
+    def _parse_include_paths(self, value: str) -> list[str]:
+        """Parse SYNC_INCLUDE_PATHS into normalized path prefixes."""
+        paths = self._parse_multiline(value)
+        # Normalize: strip trailing slashes, ensure leading slash
+        result = []
+        for p in paths:
+            p = p.rstrip("/")
+            if not p.startswith("/"):
+                p = "/" + p
+            result.append(p)
+        return result
+
+    def _parse_path_patterns(self, value: str) -> list[tuple[bool, str]]:
+        """
+        Parse SYNC_PATH_PATTERNS into (is_include, pattern) tuples.
+
+        Patterns prefixed with ! are exclusions; others are inclusions.
+        """
+        lines = self._parse_multiline(value)
+        result = []
+        for line in lines:
+            if line.startswith("!"):
+                result.append((False, line[1:].strip()))
+            else:
+                result.append((True, line))
+        return result
+
+    def _matches_include_paths(self, item_path: str) -> bool:
+        """
+        Check if item_path falls under any configured include path prefix.
+
+        Boundary-aware: /Projects/Active matches /Projects/Active/file.pdf
+        but not /Projects/ActiveOld/file.pdf.
+
+        Returns True if no include paths are configured (i.e. no filtering).
+        """
+        if not self.include_paths:
+            return True
+        for prefix in self.include_paths:
+            if item_path == prefix or item_path.startswith(prefix + "/"):
+                return True
+        return False
+
+    def _matches_path_patterns(self, item_path: str) -> tuple[bool, str]:
+        """
+        Evaluate item_path against configured glob patterns (first-match-wins).
+
+        Returns (should_include, reason).
+        If only exclude patterns exist, default is include.
+        If any include patterns exist, default is exclude.
+        """
+        if not self.path_patterns:
+            return True, ""
+
+        name = PurePosixPath(item_path).name
+
+        for is_include, pattern in self.path_patterns:
+            # Support ** recursive globs via PurePosixPath.match
+            if "**" in pattern or "/" in pattern:
+                matched = PurePosixPath(item_path).match(pattern)
+            else:
+                # Simple filename pattern (e.g. *.pdf)
+                matched = fnmatch(name, pattern)
+
+            if matched:
+                if is_include:
+                    return True, ""
+                return False, f"excluded by pattern !{pattern}"
+
+        # Default: if any include patterns exist, items not matching anything are excluded
+        has_includes = any(inc for inc, _ in self.path_patterns)
+        if has_includes:
+            return False, "no include pattern matched"
+        return True, ""
 
     def _should_process_file(self, item: DriveItem) -> tuple[bool, str]:
         """Check if a file should be processed. Returns (should_process, reason)."""
@@ -61,6 +150,15 @@ class SyncService:
         # Check size
         if item.size and item.size > self.max_file_size:
             return False, f"size exceeds {self.max_file_size // (1024 * 1024)}MB"
+
+        # Check include paths
+        if not self._matches_include_paths(item.path):
+            return False, "path not in include paths"
+
+        # Check path patterns
+        pattern_ok, pattern_reason = self._matches_path_patterns(item.path)
+        if not pattern_ok:
+            return False, pattern_reason
 
         # Check extension filters
         name_lower = item.name.lower()
@@ -205,13 +303,13 @@ class SyncService:
         dry_run: bool = False,
     ) -> None:
         """Process a single drive item."""
-        # Get existing document
-        existing = Document.get_by_item_id(item.id)
+        # Get existing document (composite key lookup)
+        existing = Document.get_by_item_id(item.id, drive_id)
 
         # Handle deletion
         if item.is_deleted:
             if existing and not existing.is_deleted:
-                logger.info(f"Removing: {item.path}")
+                logger.info(f"Removing: {existing.path}")
                 if not dry_run:
                     existing.soft_delete()
                     SyncEvent.create(
@@ -231,21 +329,82 @@ class SyncService:
         if item.is_folder:
             return
 
-        # Check if we should process this file
+        # Determine if the item is within configured paths
+        item_in_scope = self._matches_include_paths(item.path)
+        if item_in_scope:
+            pattern_ok, _ = self._matches_path_patterns(item.path)
+            item_in_scope = pattern_ok
+
+        # Handle existing document that moved out of scope
+        if existing and not existing.is_deleted and not item_in_scope:
+            logger.info(f"Removing (moved out of scope): {existing.path}")
+            if not dry_run:
+                existing.soft_delete()
+                SyncEvent.create(
+                    sync_run_id=sync_run.id,
+                    event_type="remove",
+                    sharepoint_item_id=item.id,
+                    name=existing.name,
+                    path=existing.path,
+                    document_id=existing.id,
+                    file_size=existing.file_size,
+                    file_blob_id=existing.file_blob_id,
+                )
+            stats.removed += 1
+            return
+
+        # Check full eligibility (size, extensions, etc.) for in-scope items
         should_process, skip_reason = self._should_process_file(item)
         if not should_process:
             logger.debug(f"Skipping {item.path}: {skip_reason}")
             stats.skipped += 1
             return
 
-        # Handle new file
-        if not existing:
+        # Handle new file (or previously deleted doc now back in scope)
+        if not existing or existing.is_deleted:
             logger.info(f"Adding: {item.path}")
             if not dry_run:
                 self._add_document(item, drive_id, sync_run, stats)
             else:
                 stats.added += 1
             return
+
+        # Detect path change (rename or move)
+        if existing.path != item.path:
+            logger.info(f"Path changed: {existing.path} -> {item.path}")
+            if not dry_run:
+                # Emit remove for old path, add for new path
+                SyncEvent.create(
+                    sync_run_id=sync_run.id,
+                    event_type="modify_remove",
+                    sharepoint_item_id=item.id,
+                    name=existing.name,
+                    path=existing.path,
+                    document_id=existing.id,
+                    file_size=existing.file_size,
+                    file_blob_id=existing.file_blob_id,
+                )
+                SyncEvent.create(
+                    sync_run_id=sync_run.id,
+                    event_type="modify_add",
+                    sharepoint_item_id=item.id,
+                    name=item.name,
+                    path=item.path,
+                    document_id=existing.id,
+                    file_size=existing.file_size,
+                    file_blob_id=existing.file_blob_id,
+                )
+                existing.update(
+                    name=item.name,
+                    path=item.path,
+                    web_url=item.web_url,
+                    last_modified_by=item.last_modified_by,
+                    sharepoint_modified_at=item.modified_at,
+                )
+            stats.modified += 1
+            # If content also changed, fall through to the modification check
+            if existing.sharepoint_modified_at == item.modified_at:
+                return
 
         # Handle existing file - check if modified
         if existing.sharepoint_modified_at != item.modified_at:
@@ -278,6 +437,17 @@ class SyncService:
         # Detect MIME type
         mime_type = item.mime_type or magic.from_buffer(content, mime=True)
 
+        # Verify quickXorHash if enabled
+        if self.verify_quickxor and item.quickxor_hash:
+            computed = quickxorhash(content)
+            if computed != item.quickxor_hash:
+                logger.warning(
+                    "QuickXorHash mismatch for %s: expected %s, got %s",
+                    item.path,
+                    item.quickxor_hash,
+                    computed,
+                )
+
         # Store blob
         blob = self.storage.store_content(content, mime_type)
 
@@ -294,6 +464,7 @@ class SyncService:
             last_modified_by=item.last_modified_by,
             sharepoint_created_at=item.created_at,
             sharepoint_modified_at=item.modified_at,
+            quickxor_hash=item.quickxor_hash,
             file_blob_id=blob.id,
         )
 
@@ -327,6 +498,17 @@ class SyncService:
 
         stats.bytes_downloaded += len(content)
 
+        # Verify quickXorHash if enabled
+        if self.verify_quickxor and item.quickxor_hash:
+            computed = quickxorhash(content)
+            if computed != item.quickxor_hash:
+                logger.warning(
+                    "QuickXorHash mismatch for %s: expected %s, got %s",
+                    item.path,
+                    item.quickxor_hash,
+                    computed,
+                )
+
         # Calculate hash to check if content actually changed
         new_hash = self.storage.calculate_hash(content)
         old_blob = existing.get_blob()
@@ -339,6 +521,7 @@ class SyncService:
                 web_url=item.web_url,
                 last_modified_by=item.last_modified_by,
                 sharepoint_modified_at=item.modified_at,
+                quickxor_hash=item.quickxor_hash,
             )
             stats.unchanged += 1
             stats.modified -= 1  # Adjust since we thought it was modified
@@ -371,6 +554,7 @@ class SyncService:
             web_url=item.web_url,
             last_modified_by=item.last_modified_by,
             sharepoint_modified_at=item.modified_at,
+            quickxor_hash=item.quickxor_hash,
             file_blob_id=new_blob.id,
         )
 

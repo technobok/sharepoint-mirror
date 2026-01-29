@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS db_metadata (
     value TEXT NOT NULL
 );
 
-INSERT OR IGNORE INTO db_metadata (key, value) VALUES ('schema_version', '1');
+INSERT OR IGNORE INTO db_metadata (key, value) VALUES ('schema_version', '3');
 
 -- Application settings
 CREATE TABLE IF NOT EXISTS app_setting (
@@ -35,7 +35,7 @@ CREATE INDEX IF NOT EXISTS idx_file_blob_hash ON file_blob(sha256_hash);
 CREATE TABLE IF NOT EXISTS document (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     -- SharePoint identifiers (stable across renames)
-    sharepoint_item_id TEXT UNIQUE NOT NULL,
+    sharepoint_item_id TEXT NOT NULL,
     sharepoint_drive_id TEXT NOT NULL,
     -- Current metadata
     name TEXT NOT NULL,
@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS document (
     last_modified_by TEXT,
     sharepoint_created_at TEXT,
     sharepoint_modified_at TEXT,
+    quickxor_hash TEXT,
     -- Reference to blob content
     file_blob_id INTEGER,
     -- Tracking
@@ -55,7 +56,8 @@ CREATE TABLE IF NOT EXISTS document (
     synced_at TEXT NOT NULL,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
-    FOREIGN KEY (file_blob_id) REFERENCES file_blob(id) ON DELETE SET NULL
+    FOREIGN KEY (file_blob_id) REFERENCES file_blob(id) ON DELETE SET NULL,
+    UNIQUE(sharepoint_item_id, sharepoint_drive_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_document_item_id ON document(sharepoint_item_id);

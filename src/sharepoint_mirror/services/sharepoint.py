@@ -22,6 +22,7 @@ class DriveItem:
     last_modified_by: str | None
     created_at: str | None
     modified_at: str | None
+    quickxor_hash: str | None = None
     # For delta queries
     is_deleted: bool = False
     download_url: str | None = None
@@ -208,10 +209,12 @@ class SharePointClient:
         if "lastModifiedBy" in item and "user" in item["lastModifiedBy"]:
             last_modified_by = item["lastModifiedBy"]["user"].get("displayName")
 
-        # Get download URL (for files)
+        # Get download URL and quickXorHash (for files)
         download_url = None
+        quickxor_hash = None
         if "file" in item:
             download_url = item.get("@microsoft.graph.downloadUrl")
+            quickxor_hash = item.get("file", {}).get("hashes", {}).get("quickXorHash")
 
         return DriveItem(
             id=item["id"],
@@ -225,6 +228,7 @@ class SharePointClient:
             last_modified_by=last_modified_by,
             created_at=item.get("createdDateTime"),
             modified_at=item.get("lastModifiedDateTime"),
+            quickxor_hash=quickxor_hash,
             is_deleted=is_deleted,
             download_url=download_url,
         )

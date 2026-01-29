@@ -9,7 +9,7 @@ from typing import Any
 from flask import Flask, render_template
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from sharepoint_mirror.db import close_db, init_db_command
+from sharepoint_mirror.db import close_db, init_db_command, migrate_db_command
 
 
 def create_app(test_config: dict[str, Any] | None = None) -> Flask:
@@ -54,6 +54,9 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         SYNC_MAX_FILE_SIZE_MB=100,
         SYNC_INCLUDE_EXTENSIONS="",
         SYNC_EXCLUDE_EXTENSIONS="",
+        SYNC_INCLUDE_PATHS="",
+        SYNC_PATH_PATTERNS="",
+        SYNC_VERIFY_QUICKXOR_HASH=False,
     )
 
     if test_config is None:
@@ -127,6 +130,11 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                 app.config["SYNC_EXCLUDE_EXTENSIONS"] = config.get(
                     "sync", "EXCLUDE_EXTENSIONS", fallback=""
                 )
+                app.config["SYNC_INCLUDE_PATHS"] = config.get("sync", "INCLUDE_PATHS", fallback="")
+                app.config["SYNC_PATH_PATTERNS"] = config.get("sync", "PATH_PATTERNS", fallback="")
+                app.config["SYNC_VERIFY_QUICKXOR_HASH"] = config.getboolean(
+                    "sync", "VERIFY_QUICKXOR_HASH", fallback=False
+                )
 
             # Proxy settings - enable when running behind reverse proxy (Caddy, nginx)
             if config.has_section("proxy"):
@@ -151,6 +159,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     # Register database teardown and CLI command
     app.teardown_appcontext(close_db)
     app.cli.add_command(init_db_command)
+    app.cli.add_command(migrate_db_command)
 
     # Jinja filters for date formatting
     @app.template_filter("localdate")

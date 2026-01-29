@@ -1,4 +1,4 @@
-.PHONY: help sync install init-db run rundev check clean
+.PHONY: help sync install init-db migrate-db run rundev check clean
 
 SHELL := /bin/bash
 VENV_DIR := .venv
@@ -12,7 +12,8 @@ help:
 	@echo "--------------------------------------"
 	@echo "sync     - Sync dependencies with uv (creates venv if needed)"
 	@echo "install  - Alias for sync"
-	@echo "init-db  - Create a blank database"
+	@echo "init-db     - Create a blank database"
+	@echo "migrate-db  - Run pending database migrations"
 	@echo "run      - Run server with production settings (HOST:PORT)"
 	@echo "rundev   - Run server with dev settings (DEV_HOST:DEV_PORT, debug=True)"
 	@echo "check    - Run ruff and ty for code quality"
@@ -35,6 +36,10 @@ init-db:
 	@echo "--- Creating blank database ---"
 	@$(FLASK) --app wsgi init-db
 	@echo "Database created. Run 'make run' to start the server."
+
+migrate-db:
+	@echo "--- Running database migrations ---"
+	@$(FLASK) --app wsgi migrate-db
 
 run:
 	@echo "--- Starting server (production settings) ---"

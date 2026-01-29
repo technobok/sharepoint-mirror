@@ -78,8 +78,48 @@ def get_schema_version() -> int:
         return 0
 
 
+def migrate_db() -> None:
+    """Run pending database migrations."""
+    current_version = get_schema_version()
+    migrations_dir = Path(__file__).parent.parent.parent / "database" / "migrations"
+
+    if not migrations_dir.exists():
+        return
+
+    # Find migration files: NNN_description.sql where NNN > current_version
+    migration_files: list[tuple[int, Path]] = []
+    for sql_file in sorted(migrations_dir.glob("*.sql")):
+        prefix = sql_file.stem.split("_", 1)[0]
+        try:
+            version = int(prefix)
+        except ValueError:
+            continue
+        if version > current_version:
+            migration_files.append((version, sql_file))
+
+    migration_files.sort()
+
+    db = get_db()
+    for version, sql_file in migration_files:
+        click.echo(f"Applying migration {sql_file.name} (version {version})...")
+        with open(sql_file) as f:
+            for _ in db.execute(f.read()):
+                pass
+        click.echo(f"  Applied {sql_file.name}")
+
+    if not migration_files:
+        click.echo(f"Database already at version {current_version}, no migrations to apply.")
+
+
 @click.command("init-db")
 def init_db_command() -> None:
     """Clear existing data and create new tables."""
     init_db()
     click.echo("Database initialized.")
+
+
+@click.command("migrate-db")
+def migrate_db_command() -> None:
+    """Run pending database migrations."""
+    migrate_db()
+    click.echo("Migrations complete.")

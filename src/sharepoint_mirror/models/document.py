@@ -23,6 +23,7 @@ class Document:
     last_modified_by: str | None
     sharepoint_created_at: str | None
     sharepoint_modified_at: str | None
+    quickxor_hash: str | None
     file_blob_id: int | None
     is_deleted: bool
     synced_at: str
@@ -45,11 +46,12 @@ class Document:
             last_modified_by=row[9],
             sharepoint_created_at=row[10],
             sharepoint_modified_at=row[11],
-            file_blob_id=row[12],
-            is_deleted=bool(row[13]),
-            synced_at=row[14],
-            created_at=row[15],
-            updated_at=row[16],
+            quickxor_hash=row[12],
+            file_blob_id=row[13],
+            is_deleted=bool(row[14]),
+            synced_at=row[15],
+            created_at=row[16],
+            updated_at=row[17],
         )
 
     @classmethod
@@ -61,8 +63,8 @@ class Document:
             """
             SELECT id, sharepoint_item_id, sharepoint_drive_id, name, path,
                    mime_type, file_size, web_url, created_by, last_modified_by,
-                   sharepoint_created_at, sharepoint_modified_at, file_blob_id,
-                   is_deleted, synced_at, created_at, updated_at
+                   sharepoint_created_at, sharepoint_modified_at, quickxor_hash,
+                   file_blob_id, is_deleted, synced_at, created_at, updated_at
             FROM document WHERE id = ?
             """,
             (doc_id,),
@@ -71,19 +73,19 @@ class Document:
         return cls.from_row(row) if row else None
 
     @classmethod
-    def get_by_item_id(cls, sharepoint_item_id: str) -> Document | None:
-        """Get a document by SharePoint item ID."""
+    def get_by_item_id(cls, sharepoint_item_id: str, sharepoint_drive_id: str) -> Document | None:
+        """Get a document by SharePoint item ID and drive ID."""
         db = get_db()
         cursor = db.cursor()
         cursor.execute(
             """
             SELECT id, sharepoint_item_id, sharepoint_drive_id, name, path,
                    mime_type, file_size, web_url, created_by, last_modified_by,
-                   sharepoint_created_at, sharepoint_modified_at, file_blob_id,
-                   is_deleted, synced_at, created_at, updated_at
-            FROM document WHERE sharepoint_item_id = ?
+                   sharepoint_created_at, sharepoint_modified_at, quickxor_hash,
+                   file_blob_id, is_deleted, synced_at, created_at, updated_at
+            FROM document WHERE sharepoint_item_id = ? AND sharepoint_drive_id = ?
             """,
-            (sharepoint_item_id,),
+            (sharepoint_item_id, sharepoint_drive_id),
         )
         row = cursor.fetchone()
         return cls.from_row(row) if row else None
@@ -102,6 +104,7 @@ class Document:
         last_modified_by: str | None = None,
         sharepoint_created_at: str | None = None,
         sharepoint_modified_at: str | None = None,
+        quickxor_hash: str | None = None,
         file_blob_id: int | None = None,
     ) -> Document:
         """Create a new document."""
@@ -113,9 +116,9 @@ class Document:
                 INSERT INTO document (
                     sharepoint_item_id, sharepoint_drive_id, name, path,
                     mime_type, file_size, web_url, created_by, last_modified_by,
-                    sharepoint_created_at, sharepoint_modified_at, file_blob_id,
-                    is_deleted, synced_at, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
+                    sharepoint_created_at, sharepoint_modified_at, quickxor_hash,
+                    file_blob_id, is_deleted, synced_at, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
                 """,
                 (
                     sharepoint_item_id,
@@ -129,6 +132,7 @@ class Document:
                     last_modified_by,
                     sharepoint_created_at,
                     sharepoint_modified_at,
+                    quickxor_hash,
                     file_blob_id,
                     now,
                     now,
@@ -154,6 +158,7 @@ class Document:
         last_modified_by: str | None = None,
         sharepoint_created_at: str | None = None,
         sharepoint_modified_at: str | None = None,
+        quickxor_hash: str | None = None,
         file_blob_id: int | None = None,
         is_deleted: bool | None = None,
     ) -> Document:
@@ -190,6 +195,9 @@ class Document:
         if sharepoint_modified_at is not None:
             updates.append("sharepoint_modified_at = ?")
             params.append(sharepoint_modified_at)
+        if quickxor_hash is not None:
+            updates.append("quickxor_hash = ?")
+            params.append(quickxor_hash)
         if file_blob_id is not None:
             updates.append("file_blob_id = ?")
             params.append(file_blob_id)
@@ -239,8 +247,8 @@ class Document:
             query = """
                 SELECT d.id, d.sharepoint_item_id, d.sharepoint_drive_id, d.name, d.path,
                        d.mime_type, d.file_size, d.web_url, d.created_by, d.last_modified_by,
-                       d.sharepoint_created_at, d.sharepoint_modified_at, d.file_blob_id,
-                       d.is_deleted, d.synced_at, d.created_at, d.updated_at
+                       d.sharepoint_created_at, d.sharepoint_modified_at, d.quickxor_hash,
+                       d.file_blob_id, d.is_deleted, d.synced_at, d.created_at, d.updated_at
                 FROM document d
                 JOIN document_fts fts ON d.id = fts.rowid
                 WHERE document_fts MATCH ?
@@ -253,8 +261,8 @@ class Document:
             query = """
                 SELECT id, sharepoint_item_id, sharepoint_drive_id, name, path,
                        mime_type, file_size, web_url, created_by, last_modified_by,
-                       sharepoint_created_at, sharepoint_modified_at, file_blob_id,
-                       is_deleted, synced_at, created_at, updated_at
+                       sharepoint_created_at, sharepoint_modified_at, quickxor_hash,
+                       file_blob_id, is_deleted, synced_at, created_at, updated_at
                 FROM document
             """
             params = []
@@ -303,8 +311,8 @@ class Document:
         query = """
             SELECT id, sharepoint_item_id, sharepoint_drive_id, name, path,
                    mime_type, file_size, web_url, created_by, last_modified_by,
-                   sharepoint_created_at, sharepoint_modified_at, file_blob_id,
-                   is_deleted, synced_at, created_at, updated_at
+                   sharepoint_created_at, sharepoint_modified_at, quickxor_hash,
+                   file_blob_id, is_deleted, synced_at, created_at, updated_at
             FROM document WHERE sharepoint_drive_id = ?
         """
         if not include_deleted:

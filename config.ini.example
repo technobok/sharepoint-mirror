@@ -34,6 +34,23 @@ MAX_FILE_SIZE_MB = 100
 # INCLUDE_EXTENSIONS = .pdf,.docx,.xlsx,.pptx
 # File extensions to exclude (comma-separated)
 # EXCLUDE_EXTENSIONS = .exe,.zip
+# Subdirectory paths to sync (multi-line, one per line; empty = all)
+# Only items under these paths are synced. Boundary-aware: /Projects/Active
+# matches /Projects/Active/file.pdf but not /Projects/ActiveOld/file.pdf
+# INCLUDE_PATHS =
+#     /Projects/Active
+#     /Reports/2024
+# Glob patterns for file filtering (multi-line, one per line; ! prefix = exclude)
+# First-match-wins. If only excludes, default is include. If any includes, default is exclude.
+# Supports fnmatch (*.pdf) and ** recursive globs (**/drafts/*.docx)
+# PATH_PATTERNS =
+#     *.pdf
+#     *.docx
+#     !**/~$*
+#     !**/drafts/**
+# Verify downloaded file integrity using QuickXorHash from SharePoint metadata.
+# The hash is always stored regardless of this setting.
+# VERIFY_QUICKXOR_HASH = False
 
 # Enable when running behind a reverse proxy (Caddy, nginx, etc.)
 #[proxy]
