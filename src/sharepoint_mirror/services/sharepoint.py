@@ -107,7 +107,7 @@ class SharePointClient:
 
         timeout = kwargs.pop("timeout", self.timeout)
 
-        with httpx.Client(timeout=timeout) as client:
+        with httpx.Client(timeout=timeout, follow_redirects=True) as client:
             response = client.request(method, url, headers=headers, **kwargs)
             response.raise_for_status()
             return response
