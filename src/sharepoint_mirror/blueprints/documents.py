@@ -3,6 +3,8 @@
 from io import BytesIO
 
 from flask import Blueprint, abort, render_template, request, send_file
+from openpyxl import Workbook
+from openpyxl.styles import Font
 
 from sharepoint_mirror.models import Document, Drive
 from sharepoint_mirror.services import StorageService
@@ -123,12 +125,6 @@ def content(doc_id: int):
 @bp.route("/catalog.xlsx")
 def catalog_xlsx():
     """Export full document catalog as XLSX."""
-    try:
-        from openpyxl import Workbook  # ty: ignore[unresolved-import]
-        from openpyxl.styles import Font  # ty: ignore[unresolved-import]
-    except ImportError:
-        abort(501, "openpyxl is not installed. Install with: pip install sharepoint-mirror[export]")
-
     docs = Document.get_all(include_deleted=False)
     drives = {d.id: d for d in Drive.get_all()}
 
