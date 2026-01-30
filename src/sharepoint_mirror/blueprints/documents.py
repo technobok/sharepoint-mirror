@@ -2,7 +2,7 @@
 
 from flask import Blueprint, abort, render_template, request, send_file
 
-from sharepoint_mirror.models import Document
+from sharepoint_mirror.models import Document, Drive
 from sharepoint_mirror.services import StorageService
 
 bp = Blueprint("documents", __name__, url_prefix="/documents")
@@ -22,12 +22,14 @@ def index():
     )
 
     total = Document.count_all()
+    drives = {d.id: d for d in Drive.get_all()}
 
     # Check if HTMX request
     if request.headers.get("HX-Request"):
         return render_template(
             "documents/_list.html",
             documents=docs,
+            drives=drives,
             search=search,
             page=page,
             per_page=per_page,
@@ -37,6 +39,7 @@ def index():
     return render_template(
         "documents/index.html",
         documents=docs,
+        drives=drives,
         search=search,
         page=page,
         per_page=per_page,
@@ -53,11 +56,13 @@ def view(doc_id: int):
     assert doc is not None
 
     blob = doc.get_blob()
+    drive = Drive.get_by_id(doc.sharepoint_drive_id)
 
     return render_template(
         "documents/view.html",
         document=doc,
         blob=blob,
+        drive=drive,
     )
 
 
@@ -123,8 +128,11 @@ def search():
     else:
         docs = Document.get_all(search=query, limit=50)
 
+    drives = {d.id: d for d in Drive.get_all()}
+
     return render_template(
         "documents/_list.html",
         documents=docs,
+        drives=drives,
         search=query,
     )

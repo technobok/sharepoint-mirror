@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS db_metadata (
     value TEXT NOT NULL
 );
 
-INSERT OR IGNORE INTO db_metadata (key, value) VALUES ('schema_version', '3');
+INSERT OR IGNORE INTO db_metadata (key, value) VALUES ('schema_version', '4');
 
 -- Application settings
 CREATE TABLE IF NOT EXISTS app_setting (
@@ -133,6 +133,14 @@ CREATE INDEX IF NOT EXISTS idx_sync_event_run ON sync_event(sync_run_id);
 CREATE INDEX IF NOT EXISTS idx_sync_event_document ON sync_event(document_id);
 CREATE INDEX IF NOT EXISTS idx_sync_event_type ON sync_event(event_type);
 CREATE INDEX IF NOT EXISTS idx_sync_event_logged ON sync_event(logged_at);
+
+-- Drive lookup (maps Graph API drive IDs to library names)
+CREATE TABLE IF NOT EXISTS drive (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    web_url TEXT,
+    updated_at TEXT NOT NULL
+);
 
 -- Delta tokens for Graph API (per drive)
 CREATE TABLE IF NOT EXISTS delta_token (

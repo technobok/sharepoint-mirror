@@ -19,6 +19,9 @@
     <div class="grid">
         <div>
             <dl>
+                <dt>Library</dt>
+                <dd>{{ drive.name if drive else document.sharepoint_drive_id[:8] }}</dd>
+
                 <dt>File Size</dt>
                 <dd>{{ document.file_size|filesize if document.file_size else '-' }}</dd>
 

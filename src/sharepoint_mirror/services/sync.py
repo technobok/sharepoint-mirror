@@ -8,9 +8,15 @@ from pathlib import PurePosixPath
 import magic
 from flask import current_app
 
-from sharepoint_mirror.models import DeltaToken, Document, FileBlob, SyncEvent, SyncRun
+from sharepoint_mirror.models import DeltaToken, Document, Drive, FileBlob, SyncEvent, SyncRun
 from sharepoint_mirror.quickxorhash import quickxorhash
-from sharepoint_mirror.services.sharepoint import DriveItem, SharePointClient
+from sharepoint_mirror.services.sharepoint import (
+    Drive as SharePointDrive,
+)
+from sharepoint_mirror.services.sharepoint import (
+    DriveItem,
+    SharePointClient,
+)
 from sharepoint_mirror.services.storage import StorageService
 
 logger = logging.getLogger(__name__)
@@ -217,8 +223,7 @@ class SyncService:
             # Process each drive
             for drive in drives:
                 drive_stats = self._sync_drive(
-                    drive_id=drive.id,
-                    drive_name=drive.name,
+                    drive=drive,
                     sync_run=sync_run,
                     dry_run=dry_run,
                 )
@@ -256,15 +261,18 @@ class SyncService:
 
     def _sync_drive(
         self,
-        drive_id: str,
-        drive_name: str,
+        drive: SharePointDrive,
         sync_run: SyncRun,
         dry_run: bool = False,
     ) -> SyncStats:
         """Sync a single drive."""
         stats = SyncStats()
+        drive_id = drive.id
 
-        logger.info(f"Syncing drive: {drive_name} ({drive_id})")
+        logger.info(f"Syncing drive: {drive.name} ({drive_id})")
+
+        if not dry_run:
+            Drive.upsert(drive_id, drive.name, drive.web_url)
 
         # Get delta token
         delta_token = DeltaToken.get_by_drive_id(drive_id)

@@ -3,6 +3,7 @@
     <thead>
         <tr>
             <th>Name</th>
+            <th>Library</th>
             <th>Path</th>
             <th>Size</th>
             <th>Type</th>
@@ -18,6 +19,7 @@
                     {{ doc.name }}
                 </a>
             </td>
+            <td><small>{{ drives.get(doc.sharepoint_drive_id, {}).name or doc.sharepoint_drive_id[:8] }}</small></td>
             <td><small>{{ doc.path }}</small></td>
             <td>{{ doc.file_size|filesize if doc.file_size else '-' }}</td>
             <td><small>{{ doc.mime_type or '-' }}</small></td>
