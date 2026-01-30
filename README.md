@@ -25,9 +25,9 @@ Mirror SharePoint document libraries locally for browsing, search, and vector da
 # Install dependencies
 make install
 
-# Copy and edit configuration
-cp config.ini.example config.ini
-# Edit config.ini with your Azure AD credentials and SharePoint site details
+# Copy and edit configuration (instance/ is checked first, project root as fallback)
+cp config.ini.example instance/config.ini
+# Edit instance/config.ini with your Azure AD credentials and SharePoint site details
 
 # Initialize the database
 make init-db
@@ -44,7 +44,7 @@ make run
 
 ## Configuration
 
-Copy `config.ini.example` to `config.ini` (or `instance/config.ini`) and fill in the sections:
+Copy `config.ini.example` to `instance/config.ini` (checked first) or `config.ini` in the project root (fallback) and fill in the sections:
 
 ### SharePoint Credentials
 
