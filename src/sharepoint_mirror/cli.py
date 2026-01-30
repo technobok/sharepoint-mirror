@@ -194,16 +194,8 @@ def register_cli_commands(app: Flask) -> None:
     @click.option("--output", "-o", default="catalog.xlsx", help="Output file path")
     def export_catalog_command(output: str):
         """Export full document catalog as XLSX spreadsheet."""
-        try:
-            from openpyxl import Workbook  # ty: ignore[unresolved-import]
-            from openpyxl.styles import Font  # ty: ignore[unresolved-import]
-        except ImportError:
-            click.echo(
-                "openpyxl is required for XLSX export. "
-                "Install with: pip install sharepoint-mirror[export]",
-                err=True,
-            )
-            sys.exit(1)
+        from openpyxl import Workbook
+        from openpyxl.styles import Font
 
         from sharepoint_mirror.models import Document, Drive
 
