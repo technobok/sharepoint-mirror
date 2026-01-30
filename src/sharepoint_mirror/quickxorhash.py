@@ -35,8 +35,12 @@ class QuickXorHash:
 
             self._data[index] ^= byte << offset
 
-            if offset > 56:
-                self._data[(index + 1) % NUM_CELLS] ^= byte >> (64 - offset)
+            # The last cell is only 32 bits wide, so its overflow threshold
+            # is 24 (32-8), not 56 (64-8) like the full-width cells.
+            is_last_cell = index == NUM_CELLS - 1
+            bits_in_cell = BITS_IN_LAST_CELL if is_last_cell else 64
+            if offset > bits_in_cell - 8:
+                self._data[(index + 1) % NUM_CELLS] ^= byte >> (bits_in_cell - offset)
 
             current_shift = (current_shift + SHIFT) % WIDTH_IN_BITS
 
