@@ -23,7 +23,7 @@
             <td><small>{{ doc.path }}</small></td>
             <td>{{ doc.file_size|filesize if doc.file_size else '-' }}</td>
             <td><small>{{ doc.mime_type or '-' }}</small></td>
-            <td><small>{{ doc.synced_at|localdate }}</small></td>
+            <td><small>{{ doc.synced_at|localdatetime }}</small></td>
             <td>
                 {% if doc.file_blob_id %}
                 <a href="{{ url_for('documents.download', doc_id=doc.id) }}"
@@ -39,4 +39,27 @@
 </table>
 {% else %}
 <p class="no-results">No documents found.</p>
+{% endif %}
+
+{% if total is defined and per_page is defined and total > per_page %}
+{% set total_pages = (total + per_page - 1) // per_page %}
+<nav class="pagination">
+    {% if page > 1 %}
+    <a href="{{ url_for('documents.index', search=search, page=page - 1) }}"
+       hx-get="{{ url_for('documents.index', search=search, page=page - 1) }}"
+       hx-target="#document-list"
+       hx-swap="innerHTML"
+       role="button"
+       class="outline small">&laquo; Previous</a>
+    {% endif %}
+    <span>Page {{ page }} of {{ total_pages }} ({{ total }} documents)</span>
+    {% if page < total_pages %}
+    <a href="{{ url_for('documents.index', search=search, page=page + 1) }}"
+       hx-get="{{ url_for('documents.index', search=search, page=page + 1) }}"
+       hx-target="#document-list"
+       hx-swap="innerHTML"
+       role="button"
+       class="outline small">Next &raquo;</a>
+    {% endif %}
+</nav>
 {% endif %}

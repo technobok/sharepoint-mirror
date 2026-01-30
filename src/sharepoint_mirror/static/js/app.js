@@ -1,5 +1,19 @@
 // SharePoint Mirror - App JavaScript
 
+// Timezone detection: set HTMX header + cookie so server renders in browser TZ
+(function() {
+    var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (!tz) return;
+
+    // Set cookie for full-page loads
+    document.cookie = "tz=" + tz + ";path=/;max-age=31536000;SameSite=Lax";
+
+    // Set hx-headers on <body> so every HTMX request includes the TZ
+    document.addEventListener('DOMContentLoaded', function() {
+        document.body.setAttribute('hx-headers', JSON.stringify({"X-Timezone": tz}));
+    });
+})();
+
 // Theme toggle
 function toggleTheme() {
     const html = document.documentElement;

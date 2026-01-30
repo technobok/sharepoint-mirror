@@ -199,7 +199,17 @@ class SyncRun:
         return cls.from_row(row) if row else None
 
     @classmethod
-    def get_recent(cls, limit: int = 10) -> list[SyncRun]:
+    def count_all(cls) -> int:
+        """Count total number of sync runs."""
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute("SELECT COUNT(*) FROM sync_run")
+        row = cursor.fetchone()
+        assert row is not None
+        return int(row[0])
+
+    @classmethod
+    def get_recent(cls, limit: int = 10, offset: int = 0) -> list[SyncRun]:
         """Get recent sync runs."""
         db = get_db()
         cursor = db.cursor()
@@ -208,9 +218,9 @@ class SyncRun:
             SELECT id, status, started_at, completed_at, is_full_sync,
                    files_added, files_modified, files_removed, files_unchanged,
                    files_skipped, bytes_downloaded, error_message
-            FROM sync_run ORDER BY started_at DESC LIMIT ?
+            FROM sync_run ORDER BY started_at DESC LIMIT ? OFFSET ?
             """,
-            (limit,),
+            (limit, offset),
         )
         return [cls.from_row(row) for row in cursor.fetchall()]
 

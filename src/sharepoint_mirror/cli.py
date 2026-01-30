@@ -190,6 +190,78 @@ def register_cli_commands(app: Flask) -> None:
         else:
             click.echo(content)
 
+    @app.cli.command("export-catalog")
+    @click.option("--output", "-o", default="catalog.xlsx", help="Output file path")
+    def export_catalog_command(output: str):
+        """Export full document catalog as XLSX spreadsheet."""
+        try:
+            from openpyxl import Workbook  # ty: ignore[unresolved-import]
+            from openpyxl.styles import Font  # ty: ignore[unresolved-import]
+        except ImportError:
+            click.echo(
+                "openpyxl is required for XLSX export. "
+                "Install with: pip install sharepoint-mirror[export]",
+                err=True,
+            )
+            sys.exit(1)
+
+        from sharepoint_mirror.models import Document, Drive
+
+        docs = Document.get_all(include_deleted=False)
+        drives = {d.id: d for d in Drive.get_all()}
+
+        wb = Workbook()
+        ws = wb.active
+        assert ws is not None
+        ws.title = "Documents"
+
+        headers = [
+            "Library",
+            "Name",
+            "Path",
+            "MIME Type",
+            "File Size",
+            "Web URL",
+            "Created By",
+            "Last Modified By",
+            "SP Created",
+            "SP Modified",
+            "Synced At",
+            "QuickXor Hash",
+            "SharePoint Item ID",
+            "SharePoint Drive ID",
+        ]
+        ws.append(headers)
+
+        bold = Font(bold=True)
+        for cell in ws[1]:
+            cell.font = bold
+
+        for doc in docs:
+            drive = drives.get(doc.sharepoint_drive_id)
+            ws.append(
+                [
+                    drive.name if drive else doc.sharepoint_drive_id,
+                    doc.name,
+                    doc.path,
+                    doc.mime_type,
+                    doc.file_size,
+                    doc.web_url,
+                    doc.created_by,
+                    doc.last_modified_by,
+                    doc.sharepoint_created_at,
+                    doc.sharepoint_modified_at,
+                    doc.synced_at,
+                    doc.quickxor_hash,
+                    doc.sharepoint_item_id,
+                    doc.sharepoint_drive_id,
+                ]
+            )
+
+        ws.auto_filter.ref = ws.dimensions
+        wb.save(output)
+        click.echo(f"Exported {len(docs)} document(s) to {output}")
+
     @app.cli.command("test-connection")
     def test_connection_command():
         """Test SharePoint connection."""

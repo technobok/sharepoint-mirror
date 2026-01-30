@@ -7,7 +7,9 @@
     <header>
         <hgroup>
             <h1>Documents</h1>
-            <p>{{ total }} synchronized document(s)</p>
+            <p>{{ total }} synchronized document(s)
+                &mdash; <a href="{{ url_for('documents.catalog_xlsx') }}">Download XLSX catalog</a>
+            </p>
         </hgroup>
     </header>
 

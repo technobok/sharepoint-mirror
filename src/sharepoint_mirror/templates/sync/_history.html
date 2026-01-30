@@ -34,3 +34,26 @@
 {% else %}
 <p class="no-results">No sync runs yet. Click "Sync Now" to start synchronizing.</p>
 {% endif %}
+
+{% if total is defined and per_page is defined and total > per_page %}
+{% set total_pages = (total + per_page - 1) // per_page %}
+<nav class="pagination">
+    {% if page > 1 %}
+    <a href="{{ url_for('sync.index', page=page - 1) }}"
+       hx-get="{{ url_for('sync.index', page=page - 1) }}"
+       hx-target="#sync-history"
+       hx-swap="innerHTML"
+       role="button"
+       class="outline small">&laquo; Previous</a>
+    {% endif %}
+    <span>Page {{ page }} of {{ total_pages }} ({{ total }} sync runs)</span>
+    {% if page < total_pages %}
+    <a href="{{ url_for('sync.index', page=page + 1) }}"
+       hx-get="{{ url_for('sync.index', page=page + 1) }}"
+       hx-target="#sync-history"
+       hx-swap="innerHTML"
+       role="button"
+       class="outline small">Next &raquo;</a>
+    {% endif %}
+</nav>
+{% endif %}

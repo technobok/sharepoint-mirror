@@ -2,11 +2,12 @@
 
 import configparser
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from sharepoint_mirror.db import close_db, init_db_command, migrate_db_command
@@ -171,26 +172,41 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     app.cli.add_command(init_db_command)
     app.cli.add_command(migrate_db_command)
 
+    # Timezone helper
+    def get_user_timezone() -> ZoneInfo:
+        """Get user timezone from X-Timezone header or tz cookie, default UTC."""
+        tz_name = request.headers.get("X-Timezone") or request.cookies.get("tz")
+        if tz_name:
+            try:
+                return ZoneInfo(tz_name)
+            except (KeyError, ValueError):
+                pass
+        return ZoneInfo("UTC")
+
     # Jinja filters for date formatting
     @app.template_filter("localdate")
     def localdate_filter(iso_string: str | None) -> str:
-        """Format ISO date string (date only)."""
+        """Format ISO date string (date only) in browser timezone."""
         if not iso_string:
             return ""
         try:
             dt = datetime.fromisoformat(iso_string.replace("Z", "+00:00"))
-            return dt.strftime("%Y-%m-%d")
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=UTC)
+            return dt.astimezone(get_user_timezone()).strftime("%Y-%m-%d")
         except Exception:
             return iso_string[:10] if iso_string else ""
 
     @app.template_filter("localdatetime")
     def localdatetime_filter(iso_string: str | None) -> str:
-        """Format ISO datetime string (with time)."""
+        """Format ISO datetime string (with time) in browser timezone."""
         if not iso_string:
             return ""
         try:
             dt = datetime.fromisoformat(iso_string.replace("Z", "+00:00"))
-            return dt.strftime("%Y-%m-%d %H:%M")
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=UTC)
+            return dt.astimezone(get_user_timezone()).strftime("%Y-%m-%d %H:%M %Z")
         except Exception:
             return iso_string[:16].replace("T", " ") if iso_string else ""
 

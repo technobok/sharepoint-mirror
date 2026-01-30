@@ -17,6 +17,9 @@ dev = [
     "ty",
     "pytest",
 ]
+export = [
+    "openpyxl>=3.1",
+]
 
 [build-system]
 requires = ["setuptools>=61.0"]

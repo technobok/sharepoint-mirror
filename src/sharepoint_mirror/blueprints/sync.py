@@ -11,7 +11,11 @@ bp = Blueprint("sync", __name__, url_prefix="/sync")
 @bp.route("/")
 def index():
     """Show sync history."""
-    runs = SyncRun.get_recent(limit=20)
+    page = request.args.get("page", 1, type=int)
+    per_page = 20
+
+    runs = SyncRun.get_recent(limit=per_page, offset=(page - 1) * per_page)
+    total = SyncRun.count_all()
 
     # Check if sync is in progress
     current_run = SyncRun.get_running()
@@ -22,12 +26,18 @@ def index():
             "sync/_history.html",
             runs=runs,
             current_run=current_run,
+            page=page,
+            per_page=per_page,
+            total=total,
         )
 
     return render_template(
         "sync/index.html",
         runs=runs,
         current_run=current_run,
+        page=page,
+        per_page=per_page,
+        total=total,
     )
 
 
