@@ -14,37 +14,50 @@
     });
 })();
 
-// Theme toggle
-function toggleTheme() {
-    const html = document.documentElement;
-    const currentTheme = html.getAttribute('data-theme');
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+// Theme management (light/dark toggle, defaults to browser preference)
+(function() {
+    var THEME_KEY = 'spmirror-theme';
+    var html = document.documentElement;
 
-    html.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-    updateThemeIcon(newTheme);
-}
-
-function updateThemeIcon(theme) {
-    const icon = document.getElementById('theme-icon');
-    if (icon) {
-        // Moon for light theme (click to go dark), Sun for dark theme (click to go light)
-        icon.textContent = theme === 'dark' ? '\u2600' : '\u263E';
+    function getSystemTheme() {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }
-}
 
-// Initialize theme from localStorage or system preference
-function initTheme() {
-    const savedTheme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+    function getCurrentTheme() {
+        return localStorage.getItem(THEME_KEY) || getSystemTheme();
+    }
 
-    document.documentElement.setAttribute('data-theme', theme);
-    updateThemeIcon(theme);
-}
+    function applyTheme(theme) {
+        html.setAttribute('data-theme', theme);
+    }
 
-// Run on page load
-document.addEventListener('DOMContentLoaded', initTheme);
+    // Apply immediately to prevent FOUC
+    applyTheme(getCurrentTheme());
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var checkbox = document.getElementById('mode-checkbox');
+        if (!checkbox) return;
+
+        checkbox.checked = (getCurrentTheme() === 'dark');
+
+        checkbox.addEventListener('change', function() {
+            html.classList.add('trans');
+            var theme = checkbox.checked ? 'dark' : 'light';
+            applyTheme(theme);
+            localStorage.setItem(THEME_KEY, theme);
+        });
+    });
+
+    // Respond to system preference changes when no stored preference
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
+        if (!localStorage.getItem(THEME_KEY)) {
+            var theme = getSystemTheme();
+            applyTheme(theme);
+            var checkbox = document.getElementById('mode-checkbox');
+            if (checkbox) checkbox.checked = (theme === 'dark');
+        }
+    });
+})();
 
 // HTMX event handlers
 document.body.addEventListener('htmx:beforeRequest', function(evt) {

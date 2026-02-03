@@ -7,6 +7,20 @@
     --pico-spacing: 0.75rem;
     --pico-form-element-spacing-vertical: 0.5rem;
     --pico-form-element-spacing-horizontal: 0.75rem;
+
+    /* Light/dark mode toggle dimensions (px to avoid sub-pixel snapping) */
+    --mode-slot-width: 72px;
+    --mode-slot-height: 32px;
+    --mode-button-size: 29px;
+    --mode-button-translatey: 2px;
+    --mode-button-translatex: 40px;
+    --mode-button-translatex-checked: 3px;
+    --mode-sun-translatey: 2px;
+    --mode-sun-translatex: 3px;
+    --mode-sun-translatex-checked: 40px;
+    --mode-moon-translatey: 2px;
+    --mode-moon-translatex: 3px;
+    --mode-moon-translatex-checked: 40px;
 }
 
 /* Tighter nav */
@@ -74,16 +88,106 @@ table td {
     color: white;
 }
 
-/* Theme toggle button */
-#theme-toggle {
-    padding: 0.3rem 0.5rem;
-    min-width: auto;
-    border: none;
-    background: transparent;
+/* Theme transition (applied via JS on toggle) */
+html.trans,
+html.trans body,
+html.trans header,
+html.trans main,
+html.trans footer {
+    transition: background-color 500ms, color 500ms;
 }
 
-#theme-toggle:hover {
-    background: var(--pico-secondary-hover-background);
+/* Light/dark mode toggle */
+.theme-toggle {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+}
+
+.mode-checkbox {
+    all: unset;
+    position: absolute;
+    opacity: 0;
+    height: 0;
+    width: 0;
+}
+
+.mode-slot {
+    position: relative;
+    height: var(--mode-slot-height);
+    width: var(--mode-slot-width);
+    border: 5px solid #e4e7ec;
+    border-radius: 999px;
+    background-color: white;
+    box-shadow: 1px 2px 5px #eeeeef;
+    transition: background-color 250ms !important;
+    cursor: pointer;
+    box-sizing: content-box;
+}
+
+.mode-checkbox:checked ~ .mode-slot {
+    background-color: #374151;
+}
+
+.mode-button {
+    transform: translate(var(--mode-button-translatex), var(--mode-button-translatey));
+    position: absolute;
+    height: var(--mode-button-size);
+    width: var(--mode-button-size);
+    border-radius: 50%;
+    background-color: #ffeccf;
+    box-shadow: inset 0px 0px 0px 3px #ffbb52;
+    transition: background-color 250ms, border-color 250ms, transform 500ms cubic-bezier(.19,1.66,.56,.87) !important;
+}
+
+.mode-checkbox:checked ~ .mode-slot .mode-button {
+    background-color: #485367;
+    box-shadow: inset 0px 0px 0px 3px white;
+    transform: translate(var(--mode-button-translatex-checked), var(--mode-button-translatey));
+}
+
+.sun-icon {
+    position: absolute;
+    height: var(--mode-button-size);
+    width: var(--mode-button-size);
+    color: #ffbb52;
+}
+
+.sun-icon-wrapper {
+    position: absolute;
+    height: var(--mode-button-size);
+    width: var(--mode-button-size);
+    opacity: 1;
+    transform: translate(var(--mode-sun-translatex), var(--mode-sun-translatey)) rotate(15deg);
+    transform-origin: 50% 50%;
+    transition: opacity 400ms, transform 500ms cubic-bezier(.19,1.66,.56,.87) !important;
+}
+
+.mode-checkbox:checked ~ .mode-slot .sun-icon-wrapper {
+    opacity: 0;
+    transform: translate(var(--mode-sun-translatex-checked), var(--mode-sun-translatey)) rotate(0deg);
+}
+
+.moon-icon {
+    position: absolute;
+    height: var(--mode-button-size);
+    width: var(--mode-button-size);
+    color: white;
+}
+
+.moon-icon-wrapper {
+    position: absolute;
+    height: var(--mode-button-size);
+    width: var(--mode-button-size);
+    opacity: 0;
+    transform: translate(var(--mode-moon-translatex), var(--mode-moon-translatey)) rotate(0deg);
+    transition: opacity 400ms ease-in, transform 500ms cubic-bezier(.19,1.66,.56,.87) !important;
+}
+
+.mode-checkbox:checked ~ .mode-slot .moon-icon-wrapper {
+    opacity: 1;
+    transform: translate(var(--mode-moon-translatex-checked), var(--mode-moon-translatey)) rotate(-15deg);
 }
 
 /* Footer */
