@@ -19,7 +19,18 @@ Mirror SharePoint document libraries locally for browsing, search, and vector da
 - [uv](https://docs.astral.sh/uv/) package manager
 - Azure AD app registration with SharePoint read permissions
 
-## Quick Start
+## Docker Deployment
+
+The `docker-compose.yml` joins a shared Docker network (`platform-net`) for use behind a reverse proxy.
+
+```bash
+docker compose build
+docker compose up -d
+```
+
+Data (SQLite database and blob storage) is persisted in the `sharepoint-mirror-data` Docker volume. Configuration is mounted from `./config.ini`.
+
+## Quick Start (without Docker)
 
 ```bash
 # Install dependencies
