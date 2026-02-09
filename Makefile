@@ -1,4 +1,4 @@
-.PHONY: help sync install init-db migrate-db run rundev check clean
+.PHONY: help sync install init-db migrate-db run rundev check clean docker-up docker-down
 
 SHELL := /bin/bash
 VENV_DIR := .venv
@@ -74,6 +74,13 @@ check:
 	@$(RUFF) format src
 	@$(RUFF) check src --fix
 	@$(TY) check src
+
+docker-up:
+	@test -f config.ini || { echo "Error: config.ini not found — copy from config.ini.example first"; exit 1; }
+	docker compose up -d
+
+docker-down:
+	docker compose down
 
 clean:
 	@echo "--- Cleaning up ---"
