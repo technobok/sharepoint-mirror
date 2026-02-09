@@ -318,6 +318,7 @@ dependencies = [
     { name = "click" },
     { name = "flask" },
     { name = "httpx" },
+    { name = "openpyxl" },
     { name = "python-magic" },
 ]
 
@@ -327,9 +328,6 @@ dev = [
     { name = "ruff" },
     { name = "ty" },
 ]
-export = [
-    { name = "openpyxl" },
-]
 
 [package.metadata]
 requires-dist = [
@@ -337,13 +335,13 @@ requires-dist = [
     { name = "click", specifier = ">=8.1" },
     { name = "flask", specifier = ">=3.0" },
     { name = "httpx", specifier = ">=0.27" },
-    { name = "openpyxl", marker = "extra == 'export'", specifier = ">=3.1" },
+    { name = "openpyxl", specifier = ">=3.1" },
     { name = "pytest", marker = "extra == 'dev'" },
     { name = "python-magic", specifier = ">=0.4" },
     { name = "ruff", marker = "extra == 'dev'" },
     { name = "ty", marker = "extra == 'dev'" },
 ]
-provides-extras = ["dev", "export"]
+provides-extras = ["dev"]
 
 [[package]]
 name = "ty"
