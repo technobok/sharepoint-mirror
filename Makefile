@@ -77,6 +77,7 @@ check:
 
 docker-up:
 	@test -f config.ini || { echo "Error: config.ini not found — copy from config.ini.example first"; exit 1; }
+	@mkdir -p instance
 	docker compose up -d
 
 docker-down:
