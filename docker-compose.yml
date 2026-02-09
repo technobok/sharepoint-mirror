@@ -1,0 +1,19 @@
+services:
+  sharepoint-mirror:
+    build: .
+    container_name: sharepoint-mirror
+    volumes:
+      - sharepoint-mirror-data:/app/instance
+      - ./config.ini:/app/config.ini:ro
+    environment:
+      - TZ=${TZ:-UTC}
+    networks:
+      - platform-net
+    restart: unless-stopped
+
+volumes:
+  sharepoint-mirror-data:
+
+networks:
+  platform-net:
+    external: true
