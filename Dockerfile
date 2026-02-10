@@ -50,4 +50,4 @@ USER sharepoint-mirror
 
 EXPOSE 5001
 
-CMD ["python", "wsgi.py"]
+CMD ["gunicorn", "wsgi:app", "--bind", "0.0.0.0:5001", "--workers", "2", "--preload"]
