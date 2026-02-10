@@ -18,6 +18,7 @@ Mirror SharePoint document libraries locally for browsing, search, and vector da
 - Python 3.14+
 - [uv](https://docs.astral.sh/uv/) package manager
 - Azure AD app registration with SharePoint read permissions
+- A [Gatekeeper](../gatekeeper/) instance (for web UI authentication)
 
 ## Docker Deployment
 
@@ -70,6 +71,22 @@ SITE_HOSTNAME = contoso.sharepoint.com
 SITE_PATH = /sites/Documents
 # LIBRARY_NAME = Documents  # optional, omit to sync all libraries
 ```
+
+### Gatekeeper Authentication
+
+The web UI is protected by [Gatekeeper](../gatekeeper/) SSO. Add a `[gatekeeper]` section to `config.ini`:
+
+```ini
+[gatekeeper]
+# Local mode — direct SQLite access (same host)
+DB_PATH = /path/to/gatekeeper/instance/gatekeeper.sqlite3
+
+# OR HTTP mode — remote API calls
+# URL = https://auth.internal.example.com
+# API_KEY = gk_...
+```
+
+Users log in via Gatekeeper's centralised login page (requires `server.login_url` to be set in Gatekeeper — see the [Gatekeeper README](../gatekeeper/README.md#centralised-sso-login)).
 
 ### Sync Filtering
 
