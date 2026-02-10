@@ -1,4 +1,4 @@
-"""Authentication blueprint using Gatekeeper magic-link auth."""
+"""Authentication blueprint using Gatekeeper SSO."""
 
 import functools
 from collections.abc import Callable
@@ -55,36 +55,27 @@ def login_required(view: Callable[..., Any]) -> Callable[..., Any]:
     return wrapped_view
 
 
-@bp.route("/login", methods=["GET", "POST"])
+@bp.route("/login")
 def login() -> str | Response:
-    """Login page with magic link form."""
+    """Redirect to Gatekeeper SSO login, or show fallback page."""
     if g.get("user"):
         return redirect(url_for("index"))
 
     gk = current_app.config.get("GATEKEEPER_CLIENT")
     if not gk:
-        return render_template("auth/login.html", gatekeeper_configured=False)
+        return render_template("auth/login.html", login_url=None)
 
-    if request.method == "POST":
-        identifier = request.form.get("identifier", "").strip()
-        if not identifier:
-            flash("Please enter your username or email.", "error")
-            return render_template("auth/login.html", gatekeeper_configured=True)
+    login_url = gk.get_login_url()
+    if not login_url:
+        return render_template("auth/login.html", login_url=None)
 
-        callback_url = url_for("auth.verify", _external=True)
-        next_url = request.form.get("next", "/")
+    next_url = request.args.get("next", "/")
+    callback_url = url_for("auth.verify", _external=True)
 
-        if gk.send_magic_link(
-            identifier, callback_url, redirect_url=next_url, app_name="SharePoint Mirror"
-        ):
-            return render_template("auth/login_sent.html", identifier=identifier)
-        else:
-            flash("User not found or email could not be sent.", "error")
-
-    return render_template(
-        "auth/login.html",
-        gatekeeper_configured=True,
-        next=request.args.get("next", "/"),
+    return redirect(
+        f"{login_url}?app_name=SharePoint+Mirror"
+        f"&callback_url={callback_url}"
+        f"&next={next_url}"
     )
 
 

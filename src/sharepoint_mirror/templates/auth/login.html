@@ -8,16 +8,9 @@
         <h2>Login to SharePoint Mirror</h2>
     </header>
 
-    {% if not gatekeeper_configured %}
-    <p>Gatekeeper authentication is not configured.</p>
-    <p>Add a <code>[gatekeeper]</code> section to <code>config.ini</code> with either <code>DB_PATH</code> (local) or <code>URL</code> + <code>API_KEY</code> (remote) to enable login.</p>
-    {% else %}
-    <form method="post">
-        <label for="identifier">Username or email</label>
-        <input type="text" id="identifier" name="identifier" placeholder="Enter your username or email" required autofocus>
-        <input type="hidden" name="next" value="{{ next | default('/') }}">
-        <button type="submit">Send Login Link</button>
-    </form>
+    {% if not login_url %}
+    <p>Login is not configured.</p>
+    <p>Set <code>server.login_url</code> in the Gatekeeper database and add a <code>[gatekeeper]</code> section to <code>config.ini</code> to enable SSO login.</p>
     {% endif %}
 </article>
 {% endblock %}
