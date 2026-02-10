@@ -24,7 +24,7 @@ RUN uv venv /app/.venv && \
 FROM python:3.14-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libldap-2.5-0 \
+    libldap-common \
     libmagic1 \
     libsasl2-2 \
     && rm -rf /var/lib/apt/lists/*
