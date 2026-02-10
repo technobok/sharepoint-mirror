@@ -2,6 +2,7 @@ FROM python:3.14-slim AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
+    git \
     libmagic1 \
     && rm -rf /var/lib/apt/lists/*
 
