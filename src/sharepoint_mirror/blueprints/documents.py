@@ -7,6 +7,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font
 from werkzeug.wrappers import Response
 
+from sharepoint_mirror.blueprints.auth import login_required
 from sharepoint_mirror.models import Document, Drive
 from sharepoint_mirror.services import StorageService
 
@@ -14,6 +15,7 @@ bp = Blueprint("documents", __name__, url_prefix="/documents")
 
 
 @bp.route("/")
+@login_required
 def index() -> str:
     """List all documents with search."""
     search = request.args.get("search", "").strip()
@@ -53,6 +55,7 @@ def index() -> str:
 
 
 @bp.route("/<int:doc_id>")
+@login_required
 def view(doc_id: int) -> str:
     """View document details."""
     doc = Document.get_by_id(doc_id)
@@ -72,6 +75,7 @@ def view(doc_id: int) -> str:
 
 
 @bp.route("/<int:doc_id>/download")
+@login_required
 def download(doc_id: int) -> Response:
     """Download document file."""
     doc = Document.get_by_id(doc_id)
@@ -99,6 +103,7 @@ def download(doc_id: int) -> Response:
 
 
 @bp.route("/<int:doc_id>/content")
+@login_required
 def content(doc_id: int) -> Response:
     """Serve document content (for inline viewing)."""
     doc = Document.get_by_id(doc_id)
@@ -124,6 +129,7 @@ def content(doc_id: int) -> Response:
 
 
 @bp.route("/catalog.xlsx")
+@login_required
 def catalog_xlsx() -> Response:
     """Export full document catalog as XLSX."""
     docs = Document.get_all(include_deleted=False)
@@ -192,6 +198,7 @@ def catalog_xlsx() -> Response:
 
 
 @bp.route("/search")
+@login_required
 def search() -> str:
     """Search documents (HTMX endpoint)."""
     query = request.args.get("q", "").strip()

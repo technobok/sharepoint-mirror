@@ -2,12 +2,14 @@
 
 from flask import Blueprint, abort, render_template
 
+from sharepoint_mirror.blueprints.auth import login_required
 from sharepoint_mirror.models import Document
 
 bp = Blueprint("viewer", __name__, url_prefix="/viewer")
 
 
 @bp.route("/pdf/<int:doc_id>")
+@login_required
 def pdf(doc_id: int) -> str:
     """PDF viewer page."""
     doc = Document.get_by_id(doc_id)
@@ -30,6 +32,7 @@ def pdf(doc_id: int) -> str:
 
 
 @bp.route("/text/<int:doc_id>")
+@login_required
 def text(doc_id: int) -> str:
     """Text file viewer."""
     doc = Document.get_by_id(doc_id)

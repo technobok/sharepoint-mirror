@@ -3,6 +3,7 @@
 from flask import Blueprint, redirect, render_template, request, url_for
 from werkzeug.wrappers import Response
 
+from sharepoint_mirror.blueprints.auth import login_required
 from sharepoint_mirror.models import SyncEvent, SyncRun
 from sharepoint_mirror.services import SyncService
 
@@ -10,6 +11,7 @@ bp = Blueprint("sync", __name__, url_prefix="/sync")
 
 
 @bp.route("/")
+@login_required
 def index() -> str:
     """Show sync history."""
     page = request.args.get("page", 1, type=int)
@@ -43,6 +45,7 @@ def index() -> str:
 
 
 @bp.route("/<int:run_id>")
+@login_required
 def view(run_id: int) -> str | Response:
     """View sync run details."""
     run = SyncRun.get_by_id(run_id)
@@ -59,6 +62,7 @@ def view(run_id: int) -> str | Response:
 
 
 @bp.route("/trigger", methods=["POST"])
+@login_required
 def trigger() -> str | Response:
     """Trigger a new sync."""
     full_sync = request.form.get("full", "0") == "1"
@@ -97,6 +101,7 @@ def trigger() -> str | Response:
 
 
 @bp.route("/status")
+@login_required
 def status() -> str:
     """Get current sync status (HTMX endpoint)."""
     service = SyncService()

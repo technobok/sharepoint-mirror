@@ -56,6 +56,15 @@ MAX_FILE_SIZE_MB = 100
 # The hash is always stored regardless of this setting.
 # VERIFY_QUICKXOR_HASH = False
 
+# Gatekeeper authentication (optional - if not set, app runs without auth)
+# Use either DB_PATH (local) or URL + API_KEY (remote), not both
+#[gatekeeper]
+# Local mode: path to Gatekeeper SQLite database
+# DB_PATH = /path/to/gatekeeper.sqlite3
+# Remote mode: Gatekeeper HTTP API
+# URL = https://auth.internal.example.com
+# API_KEY = gk_...
+
 # Enable when running behind a reverse proxy (Caddy, nginx, etc.)
 #[proxy]
 #X_FORWARDED_FOR = 1

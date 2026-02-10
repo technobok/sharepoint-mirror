@@ -141,6 +141,13 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                     "sync", "VERIFY_QUICKXOR_HASH", fallback=False
                 )
 
+            if config.has_section("gatekeeper"):
+                app.config["GATEKEEPER_DB_PATH"] = config.get("gatekeeper", "DB_PATH", fallback="")
+                app.config["GATEKEEPER_URL"] = config.get("gatekeeper", "URL", fallback="")
+                app.config["GATEKEEPER_API_KEY"] = config.get(
+                    "gatekeeper", "API_KEY", fallback=""
+                )
+
             # Proxy settings - enable when running behind reverse proxy (Caddy, nginx)
             if config.has_section("proxy"):
                 x_for = config.getint("proxy", "X_FORWARDED_FOR", fallback=1)
@@ -228,13 +235,33 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     register_cli_commands(app)
 
     # Register blueprints
-    from sharepoint_mirror.blueprints import documents, sync, viewer
+    from sharepoint_mirror.blueprints import auth, documents, sync, viewer
 
+    app.register_blueprint(auth.bp)
     app.register_blueprint(documents.bp)
     app.register_blueprint(sync.bp)
     app.register_blueprint(viewer.bp)
 
+    # Initialize Gatekeeper client (if configured)
+    gk_db_path = app.config.get("GATEKEEPER_DB_PATH", "")
+    gk_url = app.config.get("GATEKEEPER_URL", "")
+    gk_api_key = app.config.get("GATEKEEPER_API_KEY", "")
+
+    if gk_db_path:
+        from gatekeeper import GatekeeperClient
+
+        gk = GatekeeperClient(db_path=gk_db_path)
+        gk.init_app(app, cookie_name="gk_session")
+        app.config["GATEKEEPER_CLIENT"] = gk
+    elif gk_url and gk_api_key:
+        from gatekeeper import GatekeeperClient
+
+        gk = GatekeeperClient(server_url=gk_url, api_key=gk_api_key)
+        gk.init_app(app, cookie_name="gk_session")
+        app.config["GATEKEEPER_CLIENT"] = gk
+
     @app.route("/")
+    @auth.login_required
     def index() -> str:
         from sharepoint_mirror.models import Document, SyncRun
 

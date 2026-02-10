@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Check your email - SharePoint Mirror{% endblock %}
+
+{% block content %}
+<article style="max-width: 400px; margin: 2rem auto;">
+    <header>
+        <h2>Check your email</h2>
+    </header>
+    <p>A login link has been sent to <strong>{{ identifier }}</strong>.</p>
+    <p>Click the link in the email to log in. The link expires in 1 hour.</p>
+    <p><a href="{{ url_for('auth.login') }}">Back to login</a></p>
+</article>
+{% endblock %}

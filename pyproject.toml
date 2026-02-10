@@ -10,6 +10,7 @@ dependencies = [
     "python-magic>=0.4",
     "click>=8.1",
     "openpyxl>=3.1",
+    "gatekeeper",
 ]
 
 [project.optional-dependencies]
@@ -28,6 +29,9 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 sharepoint_mirror = ["templates/**/*.html", "static/**/*"]
+
+[tool.uv.sources]
+gatekeeper = { path = "../gatekeeper", editable = true }
 
 [tool.ruff]
 target-version = "py314"
