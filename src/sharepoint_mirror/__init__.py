@@ -235,7 +235,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     app.register_blueprint(viewer.bp)
 
     @app.route("/")
-    def index():
+    def index() -> str:
         from sharepoint_mirror.models import Document, SyncRun
 
         # Get stats for dashboard

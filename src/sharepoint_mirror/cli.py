@@ -16,7 +16,7 @@ def register_cli_commands(app: Flask) -> None:
     @click.option("--dry-run", is_flag=True, help="Preview changes without making them")
     @click.option("--library", "-l", help="Specific library to sync")
     @click.option("--verbose", "-v", is_flag=True, help="Enable verbose logging")
-    def sync_command(full: bool, dry_run: bool, library: str | None, verbose: bool):
+    def sync_command(full: bool, dry_run: bool, library: str | None, verbose: bool) -> None:
         """Synchronize documents from SharePoint."""
         if verbose:
             logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
@@ -55,7 +55,7 @@ def register_cli_commands(app: Flask) -> None:
             sys.exit(1)
 
     @app.cli.command("status")
-    def status_command():
+    def status_command() -> None:
         """Show sync status and statistics."""
         from sharepoint_mirror.services import SyncService
 
@@ -99,7 +99,7 @@ def register_cli_commands(app: Flask) -> None:
     @click.option("--limit", "-n", default=50, help="Maximum number of results")
     @click.option("--deleted", is_flag=True, help="Include deleted documents")
     @click.option("--json", "as_json", is_flag=True, help="Output as JSON")
-    def list_command(search: str | None, limit: int, deleted: bool, as_json: bool):
+    def list_command(search: str | None, limit: int, deleted: bool, as_json: bool) -> None:
         """List synchronized documents."""
         from sharepoint_mirror.models import Document
 
@@ -147,7 +147,7 @@ def register_cli_commands(app: Flask) -> None:
     @click.option("--output", "-o", help="Output file (default: stdout)")
     @click.option("--format", "-f", "fmt", default="json", type=click.Choice(["json", "jsonl"]))
     @click.option("--include-blob-path", is_flag=True, help="Include local blob file path")
-    def export_metadata_command(output: str | None, fmt: str, include_blob_path: bool):
+    def export_metadata_command(output: str | None, fmt: str, include_blob_path: bool) -> None:
         """Export document metadata for vector database ingestion."""
         from sharepoint_mirror.models import Document
 
@@ -192,7 +192,7 @@ def register_cli_commands(app: Flask) -> None:
 
     @app.cli.command("export-catalog")
     @click.option("--output", "-o", default="catalog.xlsx", help="Output file path")
-    def export_catalog_command(output: str):
+    def export_catalog_command(output: str) -> None:
         """Export full document catalog as XLSX spreadsheet."""
         from openpyxl import Workbook
         from openpyxl.styles import Font
@@ -255,7 +255,7 @@ def register_cli_commands(app: Flask) -> None:
         click.echo(f"Exported {len(docs)} document(s) to {output}")
 
     @app.cli.command("test-connection")
-    def test_connection_command():
+    def test_connection_command() -> None:
         """Test SharePoint connection."""
         from sharepoint_mirror.services import SharePointClient
 
@@ -279,7 +279,7 @@ def register_cli_commands(app: Flask) -> None:
 
     @app.cli.command("clear-delta-tokens")
     @click.confirmation_option(prompt="This will force a full sync on next run. Continue?")
-    def clear_delta_tokens_command():
+    def clear_delta_tokens_command() -> None:
         """Clear all delta tokens to force a full sync."""
         from sharepoint_mirror.models import DeltaToken
 
@@ -287,7 +287,7 @@ def register_cli_commands(app: Flask) -> None:
         click.echo("Delta tokens cleared. Next sync will be a full sync.")
 
     @app.cli.command("verify-storage")
-    def verify_storage_command():
+    def verify_storage_command() -> None:
         """Verify integrity of blob storage."""
         from sharepoint_mirror.services import StorageService
 

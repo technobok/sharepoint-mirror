@@ -73,7 +73,7 @@ check:
 	@echo "--- Running code quality checks ---"
 	@$(RUFF) format src
 	@$(RUFF) check src --fix
-	@$(TY) check src
+	@if [ -z "$$VIRTUAL_ENV" ]; then unset VIRTUAL_ENV; fi; $(TY) check src
 
 docker-up:
 	@test -f config.ini || { echo "Error: config.ini not found — copy from config.ini.example first"; exit 1; }

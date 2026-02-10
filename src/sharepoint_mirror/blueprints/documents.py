@@ -5,6 +5,7 @@ from io import BytesIO
 from flask import Blueprint, abort, render_template, request, send_file
 from openpyxl import Workbook
 from openpyxl.styles import Font
+from werkzeug.wrappers import Response
 
 from sharepoint_mirror.models import Document, Drive
 from sharepoint_mirror.services import StorageService
@@ -13,7 +14,7 @@ bp = Blueprint("documents", __name__, url_prefix="/documents")
 
 
 @bp.route("/")
-def index():
+def index() -> str:
     """List all documents with search."""
     search = request.args.get("search", "").strip()
     page = request.args.get("page", 1, type=int)
@@ -52,7 +53,7 @@ def index():
 
 
 @bp.route("/<int:doc_id>")
-def view(doc_id: int):
+def view(doc_id: int) -> str:
     """View document details."""
     doc = Document.get_by_id(doc_id)
     if doc is None:
@@ -71,7 +72,7 @@ def view(doc_id: int):
 
 
 @bp.route("/<int:doc_id>/download")
-def download(doc_id: int):
+def download(doc_id: int) -> Response:
     """Download document file."""
     doc = Document.get_by_id(doc_id)
     if doc is None:
@@ -98,7 +99,7 @@ def download(doc_id: int):
 
 
 @bp.route("/<int:doc_id>/content")
-def content(doc_id: int):
+def content(doc_id: int) -> Response:
     """Serve document content (for inline viewing)."""
     doc = Document.get_by_id(doc_id)
     if doc is None:
@@ -123,7 +124,7 @@ def content(doc_id: int):
 
 
 @bp.route("/catalog.xlsx")
-def catalog_xlsx():
+def catalog_xlsx() -> Response:
     """Export full document catalog as XLSX."""
     docs = Document.get_all(include_deleted=False)
     drives = {d.id: d for d in Drive.get_all()}
@@ -191,7 +192,7 @@ def catalog_xlsx():
 
 
 @bp.route("/search")
-def search():
+def search() -> str:
     """Search documents (HTMX endpoint)."""
     query = request.args.get("q", "").strip()
     page = request.args.get("page", 1, type=int)

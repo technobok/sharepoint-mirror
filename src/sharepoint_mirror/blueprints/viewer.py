@@ -8,7 +8,7 @@ bp = Blueprint("viewer", __name__, url_prefix="/viewer")
 
 
 @bp.route("/pdf/<int:doc_id>")
-def pdf(doc_id: int):
+def pdf(doc_id: int) -> str:
     """PDF viewer page."""
     doc = Document.get_by_id(doc_id)
     if doc is None:
@@ -30,7 +30,7 @@ def pdf(doc_id: int):
 
 
 @bp.route("/text/<int:doc_id>")
-def text(doc_id: int):
+def text(doc_id: int) -> str:
     """Text file viewer."""
     doc = Document.get_by_id(doc_id)
     if doc is None:
