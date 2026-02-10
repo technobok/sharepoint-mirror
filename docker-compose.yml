@@ -5,6 +5,7 @@ services:
     volumes:
       - ./instance:/app/instance
       - ./config.ini:/app/config.ini:ro
+      - ${GATEKEEPER_INSTANCE:-../gatekeeper/instance}:/gatekeeper-data
     environment:
       - TZ=${TZ:-UTC}
     networks:

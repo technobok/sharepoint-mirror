@@ -59,8 +59,8 @@ MAX_FILE_SIZE_MB = 100
 # Gatekeeper authentication (optional - if not set, app runs without auth)
 # Use either DB_PATH (local) or URL + API_KEY (remote), not both
 #[gatekeeper]
-# Local mode: path to Gatekeeper SQLite database
-# DB_PATH = /path/to/gatekeeper.sqlite3
+# Local mode: path to Gatekeeper SQLite database (Docker: /gatekeeper-data/gatekeeper.sqlite3)
+# DB_PATH = /gatekeeper-data/gatekeeper.sqlite3
 # Remote mode: Gatekeeper HTTP API
 # URL = https://auth.internal.example.com
 # API_KEY = gk_...

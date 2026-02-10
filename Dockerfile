@@ -14,7 +14,8 @@ COPY src/ ./src/
 
 RUN uv venv /app/.venv && \
     . /app/.venv/bin/activate && \
-    uv pip install .
+    uv pip install git+https://github.com/technobok/gatekeeper.git && \
+    uv pip install --no-sources .
 
 # Production image
 FROM python:3.14-slim
