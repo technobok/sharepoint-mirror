@@ -65,9 +65,10 @@ MAX_FILE_SIZE_MB = 100
 # URL = https://auth.internal.example.com
 # API_KEY = gk_...
 
-# Enable when running behind a reverse proxy (Caddy, nginx, etc.)
+# Override proxy header trust levels (ProxyFix is always enabled with all=1).
+# Set to 0 to disable trusting a specific header.
 #[proxy]
 #X_FORWARDED_FOR = 1
 #X_FORWARDED_PROTO = 1
 #X_FORWARDED_HOST = 1
-#X_FORWARDED_PREFIX = 0
+#X_FORWARDED_PREFIX = 1

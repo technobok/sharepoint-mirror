@@ -148,21 +148,31 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                     "gatekeeper", "API_KEY", fallback=""
                 )
 
-            # Proxy settings - enable when running behind reverse proxy (Caddy, nginx)
             if config.has_section("proxy"):
-                x_for = config.getint("proxy", "X_FORWARDED_FOR", fallback=1)
-                x_proto = config.getint("proxy", "X_FORWARDED_PROTO", fallback=1)
-                x_host = config.getint("proxy", "X_FORWARDED_HOST", fallback=1)
-                x_prefix = config.getint("proxy", "X_FORWARDED_PREFIX", fallback=0)
-                app.wsgi_app = ProxyFix(  # type: ignore[assignment]
-                    app.wsgi_app,
-                    x_for=x_for,
-                    x_proto=x_proto,
-                    x_host=x_host,
-                    x_prefix=x_prefix,
+                app.config["PROXY_X_FOR"] = config.getint("proxy", "X_FORWARDED_FOR", fallback=1)
+                app.config["PROXY_X_PROTO"] = config.getint(
+                    "proxy", "X_FORWARDED_PROTO", fallback=1
                 )
+                app.config["PROXY_X_HOST"] = config.getint(
+                    "proxy", "X_FORWARDED_HOST", fallback=1
+                )
+                app.config["PROXY_X_PREFIX"] = config.getint(
+                    "proxy", "X_FORWARDED_PREFIX", fallback=1
+                )
+
     else:
         app.config.from_mapping(test_config)
+
+    # Always apply ProxyFix - harmless without forwarding headers, required when
+    # behind Caddy/nginx for correct URL generation (especially X-Forwarded-Prefix).
+    if test_config is None:
+        app.wsgi_app = ProxyFix(  # type: ignore[assignment]
+            app.wsgi_app,
+            x_for=app.config.get("PROXY_X_FOR", 1),
+            x_proto=app.config.get("PROXY_X_PROTO", 1),
+            x_host=app.config.get("PROXY_X_HOST", 1),
+            x_prefix=app.config.get("PROXY_X_PREFIX", 1),
+        )
 
     # Validate configuration
     if app.config["SYNC_METADATA_ONLY"] and app.config["SYNC_VERIFY_QUICKXOR_HASH"]:
