@@ -174,6 +174,10 @@ class SharePointClient:
             data = response.json()
 
             for item in data.get("value", []):
+                # Delta responses can include items without a name
+                # (e.g. deleted items, root folder entries) — skip them.
+                if "name" not in item:
+                    continue
                 items.append(self._parse_drive_item(item, drive_id))
 
             # Check for next page or delta link
