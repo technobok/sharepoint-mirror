@@ -318,17 +318,45 @@ footer small {
 /* Sync status articles */
 .sync-running {
     background: #fef3c7;
+    color: #92400e;
     border-left: 4px solid #f59e0b;
+}
+
+.sync-running[aria-busy="true"]::before {
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 0.5rem;
+}
+
+.sync-running[aria-busy="true"] p {
+    display: inline;
+}
+
+[data-theme="dark"] .sync-running {
+    background: #78350f;
+    color: #fef3c7;
 }
 
 .sync-complete {
     background: #d1fae5;
+    color: #065f46;
     border-left: 4px solid var(--pico-ins-color);
+}
+
+[data-theme="dark"] .sync-complete {
+    background: #064e3b;
+    color: #d1fae5;
 }
 
 .sync-error {
     background: #fee2e2;
+    color: #991b1b;
     border-left: 4px solid var(--pico-del-color);
+}
+
+[data-theme="dark"] .sync-error {
+    background: #7f1d1d;
+    color: #fee2e2;
 }
 
 /* Error message */
@@ -403,7 +431,7 @@ dd {
     margin-top: auto;
 }
 
-/* Breadcrumb nav */
+/* Breadcrumb nav — PicoCSS handles separator via ::before */
 nav[aria-label="breadcrumb"] {
     margin-bottom: 1rem;
 }
@@ -414,14 +442,7 @@ nav[aria-label="breadcrumb"] ul {
 }
 
 nav[aria-label="breadcrumb"] li {
-    display: inline;
     padding: 0;
-}
-
-nav[aria-label="breadcrumb"] li:not(:last-child)::after {
-    content: " / ";
-    color: var(--pico-muted-color);
-    margin: 0 0.5rem;
 }
 
 nav[aria-label="breadcrumb"] li:last-child {

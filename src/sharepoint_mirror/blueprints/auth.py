@@ -107,7 +107,7 @@ def verify() -> Response:
         samesite="Lax",
     )
 
-    flash(f"Welcome, {user.fullname or user.username}!", "success")
+    flash(f"Welcome, {user.username}!", "success")
     return response
 
 
