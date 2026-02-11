@@ -35,6 +35,7 @@ COPY --from=builder /app/.venv /app/.venv
 
 COPY src/ ./src/
 COPY database/ ./database/
+COPY worker/ ./worker/
 COPY wsgi.py ./
 COPY pyproject.toml ./
 

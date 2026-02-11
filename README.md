@@ -22,14 +22,16 @@ Mirror SharePoint document libraries locally for browsing, search, and vector da
 
 ## Docker Deployment
 
-The `docker-compose.yml` joins a shared Docker network (`platform-net`) for use behind a reverse proxy.
+The `docker-compose.yml` runs two services — the web UI and a background sync worker — on a shared Docker network (`platform-net`) for use behind a reverse proxy.
 
 ```bash
 docker compose build
 docker compose up -d
 ```
 
-Data (SQLite database and blob storage) is persisted in the `sharepoint-mirror-data` Docker volume. Configuration is mounted from `./config.ini`.
+The **worker** service runs periodic syncs (every `SYNC_INTERVAL` seconds, default 300). The web UI's "Sync Now" button coordinates with the worker — only one sync can run at a time. If either process is killed mid-sync, the stuck record is cleaned up on the next restart.
+
+Data (SQLite database and blob storage) is persisted in the `instance/` directory. Configuration is mounted from `./config.ini`.
 
 ## Quick Start (without Docker)
 
@@ -92,6 +94,8 @@ Users log in via Gatekeeper's centralised login page (requires `server.login_url
 
 ```ini
 [sync]
+# Background sync interval in seconds (default 300)
+# INTERVAL = 300
 MAX_FILE_SIZE_MB = 100
 
 # Filter by extension
@@ -158,6 +162,9 @@ flask --app wsgi verify-storage
 ## Architecture
 
 ```
+worker/
+└── sync_worker.py           # Background sync worker (periodic)
+
 src/sharepoint_mirror/
 ├── __init__.py              # Flask app factory
 ├── cli.py                   # CLI commands

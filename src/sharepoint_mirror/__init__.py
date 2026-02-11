@@ -53,6 +53,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         SHAREPOINT_SITE_PATH="",
         SHAREPOINT_LIBRARY_NAME="",
         # Sync defaults
+        SYNC_INTERVAL=300,
         SYNC_DOWNLOAD_TIMEOUT=300,
         SYNC_MAX_FILE_SIZE_MB=100,
         SYNC_INCLUDE_EXTENSIONS="",
@@ -122,6 +123,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                 )
 
             if config.has_section("sync"):
+                app.config["SYNC_INTERVAL"] = config.getint("sync", "INTERVAL", fallback=300)
                 app.config["SYNC_DOWNLOAD_TIMEOUT"] = config.getint(
                     "sync", "DOWNLOAD_TIMEOUT", fallback=300
                 )
@@ -146,18 +148,14 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             if config.has_section("gatekeeper"):
                 app.config["GATEKEEPER_DB_PATH"] = config.get("gatekeeper", "DB_PATH", fallback="")
                 app.config["GATEKEEPER_URL"] = config.get("gatekeeper", "URL", fallback="")
-                app.config["GATEKEEPER_API_KEY"] = config.get(
-                    "gatekeeper", "API_KEY", fallback=""
-                )
+                app.config["GATEKEEPER_API_KEY"] = config.get("gatekeeper", "API_KEY", fallback="")
 
             if config.has_section("proxy"):
                 app.config["PROXY_X_FOR"] = config.getint("proxy", "X_FORWARDED_FOR", fallback=1)
                 app.config["PROXY_X_PROTO"] = config.getint(
                     "proxy", "X_FORWARDED_PROTO", fallback=1
                 )
-                app.config["PROXY_X_HOST"] = config.getint(
-                    "proxy", "X_FORWARDED_HOST", fallback=1
-                )
+                app.config["PROXY_X_HOST"] = config.getint("proxy", "X_FORWARDED_HOST", fallback=1)
                 app.config["PROXY_X_PREFIX"] = config.getint(
                     "proxy", "X_FORWARDED_PREFIX", fallback=1
                 )
@@ -292,5 +290,28 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             "recent_syncs": SyncRun.get_recent(limit=5),
         }
         return render_template("index.html", stats=stats)
+
+    # Recover stuck sync runs (e.g. from a crash or kill during sync)
+    with app.app_context():
+        from sharepoint_mirror.db import get_db, transaction
+
+        try:
+            db = get_db()
+            cursor = db.cursor()
+            cursor.execute("SELECT COUNT(*) FROM sync_run WHERE status = 'running'")
+            row = cursor.fetchone()
+            stuck = int(row[0]) if row else 0
+            if stuck:
+                with transaction() as cur:
+                    cur.execute(
+                        "UPDATE sync_run SET status = 'failed', "
+                        "completed_at = ?, error_message = 'Interrupted (recovered on startup)' "
+                        "WHERE status = 'running'",
+                        (datetime.now(UTC).isoformat(),),
+                    )
+                logger = logging.getLogger(__name__)
+                logger.info("Recovered %d stuck sync run(s) on startup", stuck)
+        except Exception:
+            pass  # Database may not be initialized yet
 
     return app

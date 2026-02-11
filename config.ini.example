@@ -26,6 +26,8 @@ SITE_PATH = /sites/Documents
 # LIBRARY_NAME = Documents
 
 [sync]
+# Background sync interval in seconds (default 300)
+# INTERVAL = 300
 # Download timeout in seconds
 DOWNLOAD_TIMEOUT = 300
 # Maximum file size in MB (files larger than this will be skipped)
