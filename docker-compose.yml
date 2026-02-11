@@ -4,7 +4,7 @@ services:
     container_name: sharepoint-mirror
     volumes:
       - ./config.ini:/app/config.ini:ro
-      - ./instance/sharepoint_mirror.sqlite3:/app/instance/sharepoint_mirror.sqlite3
+      - ./instance:/app/instance
       - ${BLOBS_DIRECTORY:-./instance/blobs}:/app/instance/blobs
       - ${GATEKEEPER_INSTANCE:-../gatekeeper/instance}:/gatekeeper-data
     environment:
