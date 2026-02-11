@@ -29,24 +29,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsasl2-2 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN useradd --create-home --shell /bin/bash sharepoint-mirror
-
 WORKDIR /app
 
 COPY --from=builder /app/.venv /app/.venv
 
-COPY --chown=sharepoint-mirror:sharepoint-mirror src/ ./src/
-COPY --chown=sharepoint-mirror:sharepoint-mirror database/ ./database/
-COPY --chown=sharepoint-mirror:sharepoint-mirror wsgi.py ./
-COPY --chown=sharepoint-mirror:sharepoint-mirror pyproject.toml ./
+COPY src/ ./src/
+COPY database/ ./database/
+COPY wsgi.py ./
+COPY pyproject.toml ./
 
-RUN mkdir -p /app/instance && chown sharepoint-mirror:sharepoint-mirror /app/instance
+RUN mkdir -p /app/instance
 
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
-
-USER sharepoint-mirror
 
 EXPOSE 5001
 
