@@ -46,4 +46,4 @@ ENV PYTHONDONTWRITEBYTECODE=1
 
 EXPOSE 5001
 
-CMD ["gunicorn", "wsgi:app", "--bind", "0.0.0.0:5001", "--workers", "2", "--preload"]
+CMD ["gunicorn", "wsgi:app", "--bind", "0.0.0.0:5001", "--workers", "2", "--preload", "--timeout", "600"]
