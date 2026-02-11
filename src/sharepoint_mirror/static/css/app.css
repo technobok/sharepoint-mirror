@@ -431,20 +431,7 @@ dd {
     margin-top: auto;
 }
 
-/* Breadcrumb nav — PicoCSS handles separator via ::before */
+/* Breadcrumb nav — let PicoCSS handle layout and separators */
 nav[aria-label="breadcrumb"] {
     margin-bottom: 1rem;
-}
-
-nav[aria-label="breadcrumb"] ul {
-    padding: 0;
-    margin: 0;
-}
-
-nav[aria-label="breadcrumb"] li {
-    padding: 0;
-}
-
-nav[aria-label="breadcrumb"] li:last-child {
-    color: var(--pico-muted-color);
 }
