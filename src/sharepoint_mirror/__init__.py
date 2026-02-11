@@ -297,7 +297,6 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             get_db,
             get_expected_schema_version,
             get_schema_version,
-            transaction,
         )
 
         schema_path = project_root / "database" / "schema.sql"
@@ -316,24 +315,5 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                 f"Database schema is at version {current} but version {expected} is required. "
                 f"Back up your database and run: flask --app wsgi migrate-db"
             )
-
-        # Recover stuck sync runs (e.g. from a crash or kill during sync)
-        try:
-            cursor = get_db().cursor()
-            cursor.execute("SELECT COUNT(*) FROM sync_run WHERE status = 'running'")
-            row = cursor.fetchone()
-            stuck = int(row[0]) if row else 0
-            if stuck:
-                with transaction() as cur:
-                    cur.execute(
-                        "UPDATE sync_run SET status = 'failed', "
-                        "completed_at = ?, error_message = 'Interrupted (recovered on startup)' "
-                        "WHERE status = 'running'",
-                        (datetime.now(UTC).isoformat(),),
-                    )
-                logger = logging.getLogger(__name__)
-                logger.info("Recovered %d stuck sync run(s) on startup", stuck)
-        except Exception:
-            pass  # Database may not be initialized yet
 
     return app

@@ -3,6 +3,7 @@
 import logging
 import signal
 import time
+from datetime import UTC, datetime
 
 logging.basicConfig(
     level=logging.INFO,
@@ -23,6 +24,25 @@ signal.signal(signal.SIGINT, _handle_signal)
 signal.signal(signal.SIGTERM, _handle_signal)
 
 
+def _recover_stuck_runs() -> None:
+    """Mark any running sync_run records as failed (from a previous crash)."""
+    from sharepoint_mirror.db import get_db, transaction
+
+    cursor = get_db().cursor()
+    cursor.execute("SELECT COUNT(*) FROM sync_run WHERE status = 'running'")
+    row = cursor.fetchone()
+    stuck = int(row[0]) if row else 0
+    if stuck:
+        with transaction() as cur:
+            cur.execute(
+                "UPDATE sync_run SET status = 'failed', "
+                "completed_at = ?, error_message = 'Interrupted (recovered on worker startup)' "
+                "WHERE status = 'running'",
+                (datetime.now(UTC).isoformat(),),
+            )
+        log.info("Recovered %d stuck sync run(s)", stuck)
+
+
 def run() -> None:
     """Main worker loop."""
     from sharepoint_mirror import create_app
@@ -30,6 +50,10 @@ def run() -> None:
     app = create_app()
 
     interval: int = app.config["SYNC_INTERVAL"]
+
+    # Clean up any sync runs left running by a previous crash/kill
+    with app.app_context():
+        _recover_stuck_runs()
 
     log.info("Sync worker started (interval=%ds)", interval)
 

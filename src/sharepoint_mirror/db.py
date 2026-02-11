@@ -50,9 +50,6 @@ def transaction() -> Generator[apsw.Cursor]:
     try:
         yield cursor
         cursor.execute("COMMIT;")
-        # Checkpoint WAL so writes are visible across Docker containers
-        # (the WAL shared-memory file may not be shared between containers).
-        db.execute("PRAGMA wal_checkpoint(PASSIVE);")
     except Exception:
         cursor.execute("ROLLBACK;")
         raise
