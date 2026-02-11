@@ -1,7 +1,9 @@
 """SharePoint Mirror - Mirror SharePoint documents locally for vector database ingestion."""
 
 import configparser
+import logging
 import os
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -179,6 +181,13 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         raise ValueError(
             "Configuration error: METADATA_ONLY and VERIFY_QUICKXOR_HASH cannot both be enabled."
         )
+
+    # Configure logging for the web app
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+        stream=sys.stderr,
+    )
 
     # Ensure directories exist
     instance_path.mkdir(parents=True, exist_ok=True)

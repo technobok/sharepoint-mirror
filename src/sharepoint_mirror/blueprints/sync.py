@@ -1,11 +1,15 @@
 """Sync management blueprint."""
 
-from flask import Blueprint, redirect, render_template, request, url_for
+import logging
+
+from flask import Blueprint, flash, redirect, render_template, request, url_for
 from werkzeug.wrappers import Response
 
 from sharepoint_mirror.blueprints.auth import login_required
 from sharepoint_mirror.models import SyncEvent, SyncRun
 from sharepoint_mirror.services import SyncService
+
+logger = logging.getLogger(__name__)
 
 bp = Blueprint("sync", __name__, url_prefix="/sync")
 
@@ -77,10 +81,12 @@ def trigger() -> str | Response:
                     "sync/_status.html",
                     error="A sync is already in progress",
                 )
+            flash("A sync is already in progress.", "warning")
             return redirect(url_for("sync.index"))
 
         # Start sync (this blocks until complete)
         # In production, you'd want to run this in a background task
+        logger.info("Sync triggered via web UI (full=%s)", full_sync)
         run = service.run_sync(full_sync=full_sync)
 
         if request.headers.get("HX-Request"):
@@ -90,12 +96,20 @@ def trigger() -> str | Response:
                 success=True,
             )
 
+        flash(
+            f"Sync completed: +{run.files_added} added, ~{run.files_modified} modified, "
+            f"-{run.files_removed} removed.",
+            "success",
+        )
+
     except Exception as e:
+        logger.exception("Sync trigger failed")
         if request.headers.get("HX-Request"):
             return render_template(
                 "sync/_status.html",
                 error=str(e),
             )
+        flash(f"Sync failed: {e}", "error")
 
     return redirect(url_for("sync.index"))
 
