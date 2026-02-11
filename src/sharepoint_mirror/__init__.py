@@ -291,13 +291,35 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         }
         return render_template("index.html", stats=stats)
 
-    # Recover stuck sync runs (e.g. from a crash or kill during sync)
+    # Ensure database schema exists (safe to run every startup — uses IF NOT EXISTS)
     with app.app_context():
-        from sharepoint_mirror.db import get_db, transaction
+        from sharepoint_mirror.db import (
+            get_db,
+            get_expected_schema_version,
+            get_schema_version,
+            transaction,
+        )
 
-        try:
+        schema_path = project_root / "database" / "schema.sql"
+        if schema_path.exists():
             db = get_db()
-            cursor = db.cursor()
+            with open(schema_path) as f:
+                for _ in db.execute(f.read()):
+                    pass
+
+        # Check schema version matches expected (from migration files)
+        migrations_dir = project_root / "database" / "migrations"
+        expected = get_expected_schema_version(migrations_dir)
+        current = get_schema_version()
+        if expected and current < expected:
+            raise RuntimeError(
+                f"Database schema is at version {current} but version {expected} is required. "
+                f"Back up your database and run: flask --app wsgi migrate-db"
+            )
+
+        # Recover stuck sync runs (e.g. from a crash or kill during sync)
+        try:
+            cursor = get_db().cursor()
             cursor.execute("SELECT COUNT(*) FROM sync_run WHERE status = 'running'")
             row = cursor.fetchone()
             stuck = int(row[0]) if row else 0

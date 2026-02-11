@@ -78,10 +78,26 @@ def get_schema_version() -> int:
         return 0
 
 
-def migrate_db() -> None:
+def get_expected_schema_version(migrations_dir: Path) -> int:
+    """Get the highest schema version from migration files."""
+    if not migrations_dir.exists():
+        return 0
+    max_version = 0
+    for sql_file in migrations_dir.glob("*.sql"):
+        prefix = sql_file.stem.split("_", 1)[0]
+        try:
+            version = int(prefix)
+        except ValueError:
+            continue
+        max_version = max(max_version, version)
+    return max_version
+
+
+def migrate_db(migrations_dir: Path | None = None) -> None:
     """Run pending database migrations."""
     current_version = get_schema_version()
-    migrations_dir = Path(__file__).parent.parent.parent / "database" / "migrations"
+    if migrations_dir is None:
+        migrations_dir = Path(__file__).parent.parent.parent / "database" / "migrations"
 
     if not migrations_dir.exists():
         return
