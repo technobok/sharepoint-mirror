@@ -1,32 +1,25 @@
+x-common: &common
+  build: .
+  volumes:
+    - ./config.ini:/app/config.ini:ro
+    - ./instance:/app/instance
+    - ${BLOBS_DIRECTORY:-./instance/blobs}:/app/instance/blobs
+    - ${GATEKEEPER_INSTANCE:-../gatekeeper/instance}:/gatekeeper-data
+  environment:
+    - TZ=${TZ:-UTC}
+  networks:
+    - platform-net
+  restart: unless-stopped
+
 services:
   sharepoint-mirror:
-    build: .
+    <<: *common
     container_name: sharepoint-mirror
-    volumes:
-      - ./config.ini:/app/config.ini:ro
-      - ./instance:/app/instance
-      - ${BLOBS_DIRECTORY:-./instance/blobs}:/app/instance/blobs
-      - ${GATEKEEPER_INSTANCE:-../gatekeeper/instance}:/gatekeeper-data
-    environment:
-      - TZ=${TZ:-UTC}
-    networks:
-      - platform-net
-    restart: unless-stopped
 
   worker:
-    build: .
+    <<: *common
     container_name: sharepoint-mirror-worker
     command: ["python", "-m", "worker.sync_worker"]
-    volumes:
-      - ./config.ini:/app/config.ini:ro
-      - ./instance:/app/instance
-      - ${BLOBS_DIRECTORY:-./instance/blobs}:/app/instance/blobs
-      - ${GATEKEEPER_INSTANCE:-../gatekeeper/instance}:/gatekeeper-data
-    environment:
-      - TZ=${TZ:-UTC}
-    networks:
-      - platform-net
-    restart: unless-stopped
 
 networks:
   platform-net:
