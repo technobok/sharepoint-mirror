@@ -278,14 +278,26 @@ class Document:
         return [cls.from_row(row) for row in cursor.fetchall()]
 
     @classmethod
-    def count_all(cls, include_deleted: bool = False) -> int:
+    def count_all(cls, include_deleted: bool = False, search: str | None = None) -> int:
         """Count total number of documents."""
         db = get_db()
         cursor = db.cursor()
-        if include_deleted:
+
+        if search:
+            query = """
+                SELECT COUNT(*) FROM document d
+                JOIN document_fts fts ON d.id = fts.rowid
+                WHERE document_fts MATCH ?
+            """
+            params: list = [search]
+            if not include_deleted:
+                query += " AND d.is_deleted = 0"
+            cursor.execute(query, params)
+        elif include_deleted:
             cursor.execute("SELECT COUNT(*) FROM document")
         else:
             cursor.execute("SELECT COUNT(*) FROM document WHERE is_deleted = 0")
+
         row = cursor.fetchone()
         assert row is not None
         return int(row[0])

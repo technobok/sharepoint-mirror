@@ -22,13 +22,14 @@ def index() -> str:
     page = request.args.get("page", 1, type=int)
     per_page = 50
 
+    search_filter = search if search else None
     docs = Document.get_all(
-        search=search if search else None,
+        search=search_filter,
         limit=per_page,
         offset=(page - 1) * per_page,
     )
 
-    total = Document.count_all()
+    total = Document.count_all(search=search_filter)
     drives = {d.id: d for d in Drive.get_all()}
 
     # Check if HTMX request
@@ -205,13 +206,14 @@ def search() -> str:
     page = request.args.get("page", 1, type=int)
     per_page = 50
 
+    search_filter = query if query else None
     docs = Document.get_all(
-        search=query if query else None,
+        search=search_filter,
         limit=per_page,
         offset=(page - 1) * per_page,
     )
 
-    total = Document.count_all()
+    total = Document.count_all(search=search_filter)
     drives = {d.id: d for d in Drive.get_all()}
 
     return render_template(
