@@ -69,7 +69,7 @@ def login() -> str | Response:
     if not login_url:
         return render_template("auth/login.html", login_url=None)
 
-    next_url = request.args.get("next", "/")
+    next_url = request.args.get("next", url_for("index"))
     callback_url = url_for("auth.verify", _external=True)
 
     return redirect(
