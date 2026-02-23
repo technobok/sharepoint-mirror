@@ -18,11 +18,10 @@
                name="search"
                placeholder="Search by name or path..."
                value="{{ search }}"
-               hx-get="{{ url_for('documents.search') }}"
+               hx-get="{{ url_for('documents.index') }}"
                hx-trigger="input changed delay:300ms, search"
                hx-target="#document-list"
-               hx-swap="innerHTML"
-               hx-vals='js:{"q": this.value}'>
+               hx-swap="innerHTML">
     </div>
 
     <div id="document-list">

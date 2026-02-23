@@ -196,32 +196,3 @@ def catalog_xlsx() -> Response:
         as_attachment=True,
         download_name="catalog.xlsx",
     )
-
-
-@bp.route("/search")
-@login_required
-def search() -> str:
-    """Search documents (HTMX endpoint)."""
-    query = request.args.get("q", "").strip()
-    page = request.args.get("page", 1, type=int)
-    per_page = 50
-
-    search_filter = query if query else None
-    docs = Document.get_all(
-        search=search_filter,
-        limit=per_page,
-        offset=(page - 1) * per_page,
-    )
-
-    total = Document.count_all(search=search_filter)
-    drives = {d.id: d for d in Drive.get_all()}
-
-    return render_template(
-        "documents/_list.html",
-        documents=docs,
-        drives=drives,
-        search=query,
-        page=page,
-        per_page=per_page,
-        total=total,
-    )
