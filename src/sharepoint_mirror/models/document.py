@@ -243,20 +243,19 @@ class Document:
         cursor = db.cursor()
 
         if search:
-            # Use FTS search
+            search_pattern = f"%{search}%"
             query = """
-                SELECT d.id, d.sharepoint_item_id, d.sharepoint_drive_id, d.name, d.path,
-                       d.mime_type, d.file_size, d.web_url, d.created_by, d.last_modified_by,
-                       d.sharepoint_created_at, d.sharepoint_modified_at, d.quickxor_hash,
-                       d.file_blob_id, d.is_deleted, d.synced_at, d.created_at, d.updated_at
-                FROM document d
-                JOIN document_fts fts ON d.id = fts.rowid
-                WHERE document_fts MATCH ?
+                SELECT id, sharepoint_item_id, sharepoint_drive_id, name, path,
+                       mime_type, file_size, web_url, created_by, last_modified_by,
+                       sharepoint_created_at, sharepoint_modified_at, quickxor_hash,
+                       file_blob_id, is_deleted, synced_at, created_at, updated_at
+                FROM document
+                WHERE (name LIKE ? OR path LIKE ?)
             """
-            params: list = [search]
+            params: list = [search_pattern, search_pattern]
             if not include_deleted:
-                query += " AND d.is_deleted = 0"
-            query += " ORDER BY d.path"
+                query += " AND is_deleted = 0"
+            query += " ORDER BY path"
         else:
             query = """
                 SELECT id, sharepoint_item_id, sharepoint_drive_id, name, path,
@@ -284,14 +283,11 @@ class Document:
         cursor = db.cursor()
 
         if search:
-            query = """
-                SELECT COUNT(*) FROM document d
-                JOIN document_fts fts ON d.id = fts.rowid
-                WHERE document_fts MATCH ?
-            """
-            params: list = [search]
+            search_pattern = f"%{search}%"
+            query = "SELECT COUNT(*) FROM document WHERE (name LIKE ? OR path LIKE ?)"
+            params: list = [search_pattern, search_pattern]
             if not include_deleted:
-                query += " AND d.is_deleted = 0"
+                query += " AND is_deleted = 0"
             cursor.execute(query, params)
         elif include_deleted:
             cursor.execute("SELECT COUNT(*) FROM document")
