@@ -1,4 +1,4 @@
-.PHONY: help sync install init-db migrate-db run rundev check clean docker-up docker-down
+.PHONY: help sync install init-db migrate-db run rundev check clean docker-up docker-down list-fields refresh-metadata
 
 SHELL := /bin/bash
 VENV_DIR := .venv
@@ -25,6 +25,8 @@ help:
 	@echo "do-sync-full- Force full sync (ignore delta tokens)"
 	@echo "status      - Show sync status"
 	@echo "list        - List synced documents"
+	@echo "list-fields - List SharePoint library column definitions"
+	@echo "refresh-metadata - Re-fetch custom metadata for all synced documents"
 
 sync:
 	@echo "--- Syncing dependencies ---"
@@ -68,6 +70,13 @@ status:
 list:
 	@echo "--- Documents ---"
 	@$(FLASK) --app wsgi list
+
+list-fields:
+	@$(FLASK) --app wsgi list-fields
+
+refresh-metadata:
+	@echo "--- Refreshing custom metadata for all documents ---"
+	@$(FLASK) --app wsgi refresh-metadata
 
 check:
 	@echo "--- Running code quality checks ---"

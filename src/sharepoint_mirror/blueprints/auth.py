@@ -73,9 +73,7 @@ def login() -> str | Response:
     callback_url = url_for("auth.verify", _external=True)
 
     return redirect(
-        f"{login_url}?app_name=SharePoint+Mirror"
-        f"&callback_url={callback_url}"
-        f"&next={next_url}"
+        f"{login_url}?app_name=SharePoint+Mirror&callback_url={callback_url}&next={next_url}"
     )
 
 

@@ -6,7 +6,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from werkzeug.wrappers import Response
 
 from sharepoint_mirror.blueprints.auth import login_required
-from sharepoint_mirror.models import SyncEvent, SyncRun
+from sharepoint_mirror.models import Document, SyncEvent, SyncRun
 from sharepoint_mirror.services import SyncService
 
 logger = logging.getLogger(__name__)
@@ -110,6 +110,60 @@ def trigger() -> str | Response:
                 error=str(e),
             )
         flash(f"Sync failed: {e}", "error")
+
+    return redirect(url_for("sync.index"))
+
+
+@bp.route("/refresh-metadata", methods=["POST"])
+@login_required
+def refresh_metadata() -> str | Response:
+    """Re-fetch custom metadata for all synced documents."""
+    try:
+        service = SyncService()
+        docs = Document.get_all(include_deleted=False)
+
+        if not docs:
+            if request.headers.get("HX-Request"):
+                return render_template(
+                    "sync/_refresh_metadata.html",
+                    error="No documents to process.",
+                )
+            flash("No documents to process.", "warning")
+            return redirect(url_for("sync.index"))
+
+        logger.info("Metadata refresh triggered via web UI (%d documents)", len(docs))
+
+        errors = 0
+        for doc in docs:
+            try:
+                service._sync_metadata(doc.id, doc.sharepoint_drive_id, doc.sharepoint_item_id)
+            except Exception as e:
+                errors += 1
+                logger.warning("Metadata refresh failed for %s: %s", doc.name, e)
+
+        updated = len(docs) - errors
+        msg = f"Metadata refreshed for {updated} document(s)."
+        if errors:
+            msg += f" {errors} error(s)."
+
+        if request.headers.get("HX-Request"):
+            return render_template(
+                "sync/_refresh_metadata.html",
+                success=True,
+                updated=updated,
+                errors=errors,
+            )
+
+        flash(msg, "success" if not errors else "warning")
+
+    except Exception as e:
+        logger.exception("Metadata refresh failed")
+        if request.headers.get("HX-Request"):
+            return render_template(
+                "sync/_refresh_metadata.html",
+                error=str(e),
+            )
+        flash(f"Metadata refresh failed: {e}", "error")
 
     return redirect(url_for("sync.index"))
 

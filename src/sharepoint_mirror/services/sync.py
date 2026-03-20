@@ -463,9 +463,7 @@ class SyncService:
         """Fetch listItem.fields from SharePoint and store as document metadata."""
         try:
             fields = self.sharepoint.get_item_fields(drive_id, item_id)
-            filtered = {
-                k: v for k, v in fields.items() if k not in self.exclude_metadata_fields
-            }
+            filtered = {k: v for k, v in fields.items() if k not in self.exclude_metadata_fields}
             DocumentMetadata.replace_for_document(document_id, filtered)
         except Exception as e:
             logger.warning("Failed to fetch metadata for item %s: %s", item_id, e)

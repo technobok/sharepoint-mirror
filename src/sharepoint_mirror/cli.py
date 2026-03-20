@@ -214,9 +214,7 @@ def register_cli_commands(app: Flask) -> None:
                 doc_metadata[doc.id] = meta
 
         # Get all distinct custom field names in sorted order
-        custom_fields = sorted(
-            {name for meta in doc_metadata.values() for name in meta}
-        )
+        custom_fields = sorted({name for meta in doc_metadata.values() for name in meta})
 
         wb = Workbook()
         ws = wb.active
@@ -317,6 +315,55 @@ def register_cli_commands(app: Flask) -> None:
                     )
 
                 click.echo()
+
+        except Exception as e:
+            click.echo(f"Error: {e}", err=True)
+            sys.exit(1)
+
+    @app.cli.command("refresh-metadata")
+    @click.option("--library", "-l", help="Limit to a specific library")
+    @click.option("--verbose", "-v", is_flag=True, help="Show each document being processed")
+    def refresh_metadata_command(library: str | None, verbose: bool) -> None:
+        """Re-fetch custom metadata (listItem.fields) for all synced documents."""
+        if verbose:
+            logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
+        else:
+            logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+
+        from sharepoint_mirror.models import Document, Drive
+        from sharepoint_mirror.services import SyncService
+
+        try:
+            service = SyncService()
+
+            docs = Document.get_all(include_deleted=False)
+
+            # Filter by library if specified
+            if library:
+                drives = {d.name: d for d in Drive.get_all()}
+                drive = drives.get(library)
+                if not drive:
+                    click.echo(f"Library not found: {library}", err=True)
+                    sys.exit(1)
+                docs = [d for d in docs if d.sharepoint_drive_id == drive.id]
+
+            if not docs:
+                click.echo("No documents to process.")
+                return
+
+            click.echo(f"Refreshing metadata for {len(docs)} document(s)...")
+
+            errors = 0
+            for i, doc in enumerate(docs, 1):
+                if verbose:
+                    click.echo(f"  [{i}/{len(docs)}] {doc.name}")
+                try:
+                    service._sync_metadata(doc.id, doc.sharepoint_drive_id, doc.sharepoint_item_id)
+                except Exception as e:
+                    errors += 1
+                    click.echo(f"  Warning: {doc.name}: {e}", err=True)
+
+            click.echo(f"Done. Processed {len(docs)} document(s), {errors} error(s).")
 
         except Exception as e:
             click.echo(f"Error: {e}", err=True)

@@ -11,6 +11,7 @@ Mirror SharePoint document libraries locally for browsing, search, and vector da
 - **Flexible filtering** — include/exclude by extension, path prefix, or glob pattern
 - **Metadata-only mode** — explore a SharePoint site structure without downloading content
 - **QuickXorHash verification** — optional integrity check against SharePoint's server-side hashes
+- **Custom metadata** — syncs SharePoint listItem.fields (e.g. Department, Country) into a queryable key-value store
 - **CLI tools** — sync, export metadata, verify storage, inspect status
 
 ## Requirements
@@ -119,6 +120,9 @@ MAX_FILE_SIZE_MB = 100
 
 # Verify file integrity using QuickXorHash
 # VERIFY_QUICKXOR_HASH = False
+
+# Exclude specific SharePoint metadata fields (merged with built-in defaults)
+# EXCLUDE_METADATA_FIELDS = SomeInternalField,AnotherField
 ```
 
 ## Make Targets
@@ -135,6 +139,8 @@ MAX_FILE_SIZE_MB = 100
 | `make do-sync-full` | Full sync (ignore delta tokens) |
 | `make status` | Show sync status and statistics |
 | `make list` | List synced documents |
+| `make list-fields` | List SharePoint library column definitions |
+| `make refresh-metadata` | Re-fetch custom metadata for all synced documents |
 | `make check` | Run ruff format/lint + ty typecheck |
 | `make clean` | Remove temp files and database |
 
@@ -152,6 +158,10 @@ flask --app wsgi list [--search TEXT] [--limit N] [--deleted] [--json]
 
 # Export metadata (for vector DB ingestion)
 flask --app wsgi export-metadata [-o FILE] [-f json|jsonl] [--include-blob-path]
+
+# Custom metadata
+flask --app wsgi list-fields [--library NAME] [--include-hidden]
+flask --app wsgi refresh-metadata [-l LIBRARY] [-v]
 
 # Maintenance
 flask --app wsgi test-connection
@@ -175,6 +185,7 @@ src/sharepoint_mirror/
 │   ├── file_blob.py         #   Content-addressed blob storage
 │   ├── sync_run.py          #   Sync operation records
 │   ├── sync_event.py        #   Individual change events
+│   ├── document_metadata.py  #   Custom metadata key-value store
 │   └── delta_token.py       #   Graph API delta links
 ├── services/
 │   ├── sharepoint.py        # Microsoft Graph API client
