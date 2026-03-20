@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS db_metadata (
     value TEXT NOT NULL
 );
 
-INSERT OR IGNORE INTO db_metadata (key, value) VALUES ('schema_version', '4');
+INSERT OR IGNORE INTO db_metadata (key, value) VALUES ('schema_version', '5');
 
 -- Application settings
 CREATE TABLE IF NOT EXISTS app_setting (
@@ -151,6 +151,20 @@ CREATE TABLE IF NOT EXISTS delta_token (
 );
 
 CREATE INDEX IF NOT EXISTS idx_delta_token_drive ON delta_token(drive_id);
+
+-- Custom metadata fields from SharePoint listItem.fields
+CREATE TABLE IF NOT EXISTS document_metadata (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    document_id INTEGER NOT NULL,
+    field_name TEXT NOT NULL,
+    field_value TEXT,
+    FOREIGN KEY (document_id) REFERENCES document(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_docmeta_document ON document_metadata(document_id);
+CREATE INDEX IF NOT EXISTS idx_docmeta_field ON document_metadata(field_name);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_docmeta_doc_field_value
+    ON document_metadata(document_id, field_name, field_value);
 
 -- Default app settings
 INSERT OR IGNORE INTO app_setting (key, value, description) VALUES

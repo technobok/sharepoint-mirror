@@ -5,7 +5,7 @@ import logging
 import sys
 
 import click
-from flask import Flask
+from flask import Flask, current_app
 
 
 def register_cli_commands(app: Flask) -> None:
@@ -149,7 +149,7 @@ def register_cli_commands(app: Flask) -> None:
     @click.option("--include-blob-path", is_flag=True, help="Include local blob file path")
     def export_metadata_command(output: str | None, fmt: str, include_blob_path: bool) -> None:
         """Export document metadata for vector database ingestion."""
-        from sharepoint_mirror.models import Document
+        from sharepoint_mirror.models import Document, DocumentMetadata
 
         docs = Document.get_all(include_deleted=False)
 
@@ -176,6 +176,10 @@ def register_cli_commands(app: Flask) -> None:
                     record["blob_path"] = str(blob.get_path())
                     record["blob_hash"] = blob.sha256_hash
 
+            custom = DocumentMetadata.get_for_document(doc.id)
+            if custom:
+                record["custom_metadata"] = custom
+
             records.append(record)
 
         if fmt == "json":
@@ -197,10 +201,22 @@ def register_cli_commands(app: Flask) -> None:
         from openpyxl import Workbook
         from openpyxl.styles import Font
 
-        from sharepoint_mirror.models import Document, Drive
+        from sharepoint_mirror.models import Document, DocumentMetadata, Drive
 
         docs = Document.get_all(include_deleted=False)
         drives = {d.id: d for d in Drive.get_all()}
+
+        # Collect custom metadata for all documents and discover field names
+        doc_metadata: dict[int, dict[str, list[str]]] = {}
+        for doc in docs:
+            meta = DocumentMetadata.get_for_document(doc.id)
+            if meta:
+                doc_metadata[doc.id] = meta
+
+        # Get all distinct custom field names in sorted order
+        custom_fields = sorted(
+            {name for meta in doc_metadata.values() for name in meta}
+        )
 
         wb = Workbook()
         ws = wb.active
@@ -222,7 +238,7 @@ def register_cli_commands(app: Flask) -> None:
             "QuickXor Hash",
             "SharePoint Item ID",
             "SharePoint Drive ID",
-        ]
+        ] + custom_fields
         ws.append(headers)
 
         bold = Font(bold=True)
@@ -231,28 +247,80 @@ def register_cli_commands(app: Flask) -> None:
 
         for doc in docs:
             drive = drives.get(doc.sharepoint_drive_id)
-            ws.append(
-                [
-                    drive.name if drive else doc.sharepoint_drive_id,
-                    doc.name,
-                    doc.path,
-                    doc.mime_type,
-                    doc.file_size,
-                    doc.web_url,
-                    doc.created_by,
-                    doc.last_modified_by,
-                    doc.sharepoint_created_at,
-                    doc.sharepoint_modified_at,
-                    doc.synced_at,
-                    doc.quickxor_hash,
-                    doc.sharepoint_item_id,
-                    doc.sharepoint_drive_id,
-                ]
-            )
+            row = [
+                drive.name if drive else doc.sharepoint_drive_id,
+                doc.name,
+                doc.path,
+                doc.mime_type,
+                doc.file_size,
+                doc.web_url,
+                doc.created_by,
+                doc.last_modified_by,
+                doc.sharepoint_created_at,
+                doc.sharepoint_modified_at,
+                doc.synced_at,
+                doc.quickxor_hash,
+                doc.sharepoint_item_id,
+                doc.sharepoint_drive_id,
+            ]
+            meta = doc_metadata.get(doc.id, {})
+            for field_name in custom_fields:
+                values = meta.get(field_name, [])
+                row.append("; ".join(v for v in values if v is not None) if values else "")
+            ws.append(row)
 
         ws.auto_filter.ref = ws.dimensions
         wb.save(output)
         click.echo(f"Exported {len(docs)} document(s) to {output}")
+
+    @app.cli.command("list-fields")
+    @click.option("--library", "-l", help="Specific library (default: all)")
+    @click.option("--include-hidden", is_flag=True, help="Include hidden columns")
+    def list_fields_command(library: str | None, include_hidden: bool) -> None:
+        """List custom metadata fields defined on SharePoint document libraries."""
+        from sharepoint_mirror.services import SharePointClient
+
+        try:
+            client = SharePointClient()
+            library_name = library or current_app.config.get("SHAREPOINT_LIBRARY_NAME", "")
+
+            if library_name:
+                drive = client.get_drive_by_name(library_name)
+                if not drive:
+                    click.echo(f"Library not found: {library_name}", err=True)
+                    sys.exit(1)
+                drives = [drive]
+            else:
+                drives = client.get_drives()
+
+            for drv in drives:
+                columns = client.get_library_columns(drv.id)
+
+                click.echo(f"Library: {drv.name}")
+                click.echo()
+                click.echo(
+                    f"  {'Name':<30} {'Type':<12} {'Read-Only':<11} {'Hidden':<8} Description"
+                )
+                click.echo(f"  {'─' * 90}")
+
+                for col in columns:
+                    hidden = col.get("hidden", False)
+                    if hidden and not include_hidden:
+                        continue
+                    name = col.get("displayName") or col.get("name", "?")
+                    col_type = col.get("type", "?")
+                    read_only = "yes" if col.get("readOnly", False) else "no"
+                    hidden_str = "yes" if hidden else "no"
+                    description = col.get("description", "") or ""
+                    click.echo(
+                        f"  {name:<30} {col_type:<12} {read_only:<11} {hidden_str:<8} {description}"
+                    )
+
+                click.echo()
+
+        except Exception as e:
+            click.echo(f"Error: {e}", err=True)
+            sys.exit(1)
 
     @app.cli.command("test-connection")
     def test_connection_command() -> None:

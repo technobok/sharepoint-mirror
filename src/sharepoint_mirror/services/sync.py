@@ -8,7 +8,15 @@ from pathlib import PurePosixPath
 import magic
 from flask import current_app
 
-from sharepoint_mirror.models import DeltaToken, Document, Drive, FileBlob, SyncEvent, SyncRun
+from sharepoint_mirror.models import (
+    DeltaToken,
+    Document,
+    DocumentMetadata,
+    Drive,
+    FileBlob,
+    SyncEvent,
+    SyncRun,
+)
 from sharepoint_mirror.quickxorhash import quickxorhash
 from sharepoint_mirror.services.sharepoint import (
     Drive as SharePointDrive,
@@ -63,6 +71,30 @@ class SyncService:
         )
         self.metadata_only = current_app.config.get("SYNC_METADATA_ONLY", False)
         self.verify_quickxor = current_app.config.get("SYNC_VERIFY_QUICKXOR_HASH", False)
+        self.exclude_metadata_fields = self._parse_exclude_metadata_fields(
+            current_app.config.get("SYNC_EXCLUDE_METADATA_FIELDS", "")
+        )
+
+    # Known noisy internal SharePoint fields excluded by default
+    DEFAULT_EXCLUDE_METADATA_FIELDS = {
+        "_ComplianceFlags",
+        "_ComplianceTag",
+        "_ComplianceTagWrittenTime",
+        "_ComplianceTagUserId",
+        "_IpLabelId",
+        "_IpLabelHash",
+        "MediaServiceFastMetadata",
+        "MediaServiceMetadata",
+        "MediaServiceAutoTags",
+        "MediaServiceOCR",
+        "MediaServiceGenerationTime",
+        "MediaServiceEventHashCode",
+    }
+
+    def _parse_exclude_metadata_fields(self, value: str) -> set[str]:
+        """Parse SYNC_EXCLUDE_METADATA_FIELDS into a set. Merges with defaults."""
+        configured = {f.strip() for f in value.split(",") if f.strip()} if value else set()
+        return self.DEFAULT_EXCLUDE_METADATA_FIELDS | configured
 
     def _parse_extensions(self, ext_string: str) -> set[str]:
         """Parse comma-separated extensions string."""
@@ -427,6 +459,17 @@ class SyncService:
         # No changes
         stats.unchanged += 1
 
+    def _sync_metadata(self, document_id: int, drive_id: str, item_id: str) -> None:
+        """Fetch listItem.fields from SharePoint and store as document metadata."""
+        try:
+            fields = self.sharepoint.get_item_fields(drive_id, item_id)
+            filtered = {
+                k: v for k, v in fields.items() if k not in self.exclude_metadata_fields
+            }
+            DocumentMetadata.replace_for_document(document_id, filtered)
+        except Exception as e:
+            logger.warning("Failed to fetch metadata for item %s: %s", item_id, e)
+
     def _add_document(
         self,
         item: DriveItem,
@@ -461,6 +504,7 @@ class SyncService:
                 file_size=item.size,
                 file_blob_id=None,
             )
+            self._sync_metadata(doc.id, drive_id, item.id)
             stats.added += 1
             return
 
@@ -518,6 +562,7 @@ class SyncService:
             file_blob_id=blob.id,
         )
 
+        self._sync_metadata(doc.id, drive_id, item.id)
         stats.added += 1
 
     def _update_document(
@@ -539,6 +584,7 @@ class SyncService:
                 sharepoint_modified_at=item.modified_at,
                 quickxor_hash=item.quickxor_hash,
             )
+            self._sync_metadata(existing.id, existing.sharepoint_drive_id, item.id)
             stats.modified += 1
             return
 
@@ -575,6 +621,7 @@ class SyncService:
                 sharepoint_modified_at=item.modified_at,
                 quickxor_hash=item.quickxor_hash,
             )
+            self._sync_metadata(existing.id, existing.sharepoint_drive_id, item.id)
             stats.unchanged += 1
             stats.modified -= 1  # Adjust since we thought it was modified
             return
@@ -622,6 +669,7 @@ class SyncService:
             file_blob_id=new_blob.id,
         )
 
+        self._sync_metadata(existing.id, existing.sharepoint_drive_id, item.id)
         stats.modified += 1
 
     def get_status(self) -> dict:

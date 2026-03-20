@@ -62,6 +62,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         SYNC_PATH_PATTERNS="",
         SYNC_METADATA_ONLY=False,
         SYNC_VERIFY_QUICKXOR_HASH=False,
+        SYNC_EXCLUDE_METADATA_FIELDS="",
     )
 
     if test_config is None:
@@ -143,6 +144,9 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                 )
                 app.config["SYNC_VERIFY_QUICKXOR_HASH"] = config.getboolean(
                     "sync", "VERIFY_QUICKXOR_HASH", fallback=False
+                )
+                app.config["SYNC_EXCLUDE_METADATA_FIELDS"] = config.get(
+                    "sync", "EXCLUDE_METADATA_FIELDS", fallback=""
                 )
 
             if config.has_section("gatekeeper"):

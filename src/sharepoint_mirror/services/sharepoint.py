@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import httpx
 from flask import current_app
@@ -236,6 +237,22 @@ class SharePointClient:
             is_deleted=is_deleted,
             download_url=download_url,
         )
+
+    def get_item_fields(self, drive_id: str, item_id: str) -> dict[str, Any]:
+        """Fetch listItem.fields for a drive item."""
+        url = (
+            f"{self.GRAPH_BASE_URL}/drives/{drive_id}/items/{item_id}"
+            "?$expand=listItem($expand=fields)"
+        )
+        response = self._request("GET", url)
+        data = response.json()
+        return data.get("listItem", {}).get("fields", {})
+
+    def get_library_columns(self, drive_id: str) -> list[dict]:
+        """Get column definitions for a document library."""
+        url = f"{self.GRAPH_BASE_URL}/drives/{drive_id}/list/columns"
+        response = self._request("GET", url)
+        return response.json().get("value", [])
 
     def download_file(self, drive_id: str, item_id: str) -> bytes:
         """Download file content."""

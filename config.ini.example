@@ -57,6 +57,12 @@ MAX_FILE_SIZE_MB = 100
 # Verify downloaded file integrity using QuickXorHash from SharePoint metadata.
 # The hash is always stored regardless of this setting.
 # VERIFY_QUICKXOR_HASH = False
+# Custom metadata fields to exclude (comma-separated internal field names)
+# By default all listItem.fields are synced; use this to filter out noisy ones.
+# EXCLUDE_METADATA_FIELDS = _ComplianceFlags,_ComplianceTag,_ComplianceTagWrittenTime,
+#     _ComplianceTagUserId,_IpLabelId,_IpLabelHash,MediaServiceFastMetadata,
+#     MediaServiceMetadata,MediaServiceAutoTags,MediaServiceOCR,
+#     MediaServiceGenerationTime,MediaServiceEventHashCode
 
 # Gatekeeper authentication (optional - if not set, app runs without auth)
 # Use either DB_PATH (local) or URL + API_KEY (remote), not both
