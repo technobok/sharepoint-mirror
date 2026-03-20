@@ -22,7 +22,7 @@
             </td>
             <td>{{ run.completed_at|localdatetime if run.completed_at else '-' }}</td>
             <td><span class="status-badge status-{{ run.status }}">{{ run.status }}</span></td>
-            <td>{{ 'Full' if run.is_full_sync else 'Delta' }}</td>
+            <td>{% if run.sync_type == 'metadata' %}Metadata{% elif run.is_full_sync %}Full{% else %}Delta{% endif %}</td>
             <td>{{ run.files_added }}</td>
             <td>{{ run.files_modified }}</td>
             <td>{{ run.files_removed }}</td>

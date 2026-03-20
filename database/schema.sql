@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS db_metadata (
     value TEXT NOT NULL
 );
 
-INSERT OR IGNORE INTO db_metadata (key, value) VALUES ('schema_version', '5');
+INSERT OR IGNORE INTO db_metadata (key, value) VALUES ('schema_version', '6');
 
 -- Application settings
 CREATE TABLE IF NOT EXISTS app_setting (
@@ -96,6 +96,7 @@ CREATE TABLE IF NOT EXISTS sync_run (
     started_at TEXT NOT NULL,
     completed_at TEXT,
     is_full_sync INTEGER NOT NULL DEFAULT 0,
+    sync_type TEXT NOT NULL DEFAULT 'sync',  -- sync, metadata
     -- Counts
     files_added INTEGER NOT NULL DEFAULT 0,
     files_modified INTEGER NOT NULL DEFAULT 0,

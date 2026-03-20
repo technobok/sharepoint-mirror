@@ -2,8 +2,18 @@
 <article class="sync-error">
     <p>Metadata refresh error: {{ error }}</p>
 </article>
-{% elif success %}
-<article class="sync-complete">
-    <p>Metadata refreshed for {{ updated }} document(s).{% if errors %} {{ errors }} error(s).{% endif %}</p>
+{% elif state %}
+    {% if state.running %}
+<article aria-busy="true"
+         hx-get="{{ url_for('sync.refresh_metadata_status') }}"
+         hx-trigger="every 2s"
+         hx-swap="outerHTML">
+    <p>Refreshing metadata: {{ state.processed }} / {{ state.total }}{% if state.errors %} ({{ state.errors }} errors){% endif %}</p>
+    <progress value="{{ state.processed }}" max="{{ state.total }}"></progress>
 </article>
+    {% elif state.done %}
+<article class="sync-complete">
+    <p>Metadata refreshed for {{ state.total - state.errors }} document(s).{% if state.errors %} {{ state.errors }} error(s).{% endif %}</p>
+</article>
+    {% endif %}
 {% endif %}

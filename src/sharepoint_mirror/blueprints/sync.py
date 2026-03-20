@@ -1,8 +1,10 @@
 """Sync management blueprint."""
 
 import logging
+import threading
+from dataclasses import dataclass, field
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
 from werkzeug.wrappers import Response
 
 from sharepoint_mirror.blueprints.auth import login_required
@@ -12,6 +14,29 @@ from sharepoint_mirror.services import SyncService
 logger = logging.getLogger(__name__)
 
 bp = Blueprint("sync", __name__, url_prefix="/sync")
+
+
+@dataclass
+class MetadataRefreshState:
+    """Tracks progress of a background metadata refresh."""
+
+    running: bool = False
+    total: int = 0
+    processed: int = 0
+    errors: int = 0
+    error_messages: list[str] = field(default_factory=list)
+    done: bool = False
+
+    def reset(self, total: int) -> None:
+        self.running = True
+        self.total = total
+        self.processed = 0
+        self.errors = 0
+        self.error_messages = []
+        self.done = False
+
+
+_refresh_state = MetadataRefreshState()
 
 
 @bp.route("/")
@@ -117,55 +142,66 @@ def trigger() -> str | Response:
 @bp.route("/refresh-metadata", methods=["POST"])
 @login_required
 def refresh_metadata() -> str | Response:
-    """Re-fetch custom metadata for all synced documents."""
-    try:
-        service = SyncService()
-        docs = Document.get_all(include_deleted=False)
+    """Start a background metadata refresh for all synced documents."""
+    if _refresh_state.running:
+        if request.headers.get("HX-Request"):
+            return render_template("sync/_refresh_metadata.html", state=_refresh_state)
+        flash("Metadata refresh is already running.", "warning")
+        return redirect(url_for("sync.index"))
 
-        if not docs:
-            if request.headers.get("HX-Request"):
-                return render_template(
-                    "sync/_refresh_metadata.html",
-                    error="No documents to process.",
-                )
-            flash("No documents to process.", "warning")
-            return redirect(url_for("sync.index"))
+    docs = Document.get_all(include_deleted=False)
+    if not docs:
+        if request.headers.get("HX-Request"):
+            return render_template("sync/_refresh_metadata.html", error="No documents to process.")
+        flash("No documents to process.", "warning")
+        return redirect(url_for("sync.index"))
 
-        logger.info("Metadata refresh triggered via web UI (%d documents)", len(docs))
+    # Capture document info before spawning thread (avoid passing ORM objects)
+    doc_refs = [(doc.id, doc.sharepoint_drive_id, doc.sharepoint_item_id, doc.name) for doc in docs]
+    _refresh_state.reset(len(doc_refs))
 
-        errors = 0
-        for doc in docs:
+    app = current_app._get_current_object()
+
+    def run_refresh() -> None:
+        with app.app_context():
+            sync_run = SyncRun.create(sync_type="metadata")
             try:
-                service._sync_metadata(doc.id, doc.sharepoint_drive_id, doc.sharepoint_item_id)
+                service = SyncService()
+                for doc_id, drive_id, item_id, name in doc_refs:
+                    try:
+                        service._sync_metadata(doc_id, drive_id, item_id)
+                    except Exception as e:
+                        _refresh_state.errors += 1
+                        _refresh_state.error_messages.append(f"{name}: {e}")
+                        logger.warning("Metadata refresh failed for %s: %s", name, e)
+                    _refresh_state.processed += 1
+                sync_run.complete(
+                    files_modified=_refresh_state.processed - _refresh_state.errors,
+                    files_skipped=_refresh_state.errors,
+                )
             except Exception as e:
-                errors += 1
-                logger.warning("Metadata refresh failed for %s: %s", doc.name, e)
+                logger.exception("Metadata refresh failed")
+                _refresh_state.error_messages.append(str(e))
+                sync_run.fail(str(e))
+            finally:
+                _refresh_state.running = False
+                _refresh_state.done = True
 
-        updated = len(docs) - errors
-        msg = f"Metadata refreshed for {updated} document(s)."
-        if errors:
-            msg += f" {errors} error(s)."
+    logger.info("Metadata refresh triggered via web UI (%d documents)", len(doc_refs))
+    threading.Thread(target=run_refresh, daemon=True).start()
 
-        if request.headers.get("HX-Request"):
-            return render_template(
-                "sync/_refresh_metadata.html",
-                success=True,
-                updated=updated,
-                errors=errors,
-            )
+    if request.headers.get("HX-Request"):
+        return render_template("sync/_refresh_metadata.html", state=_refresh_state)
 
-        flash(msg, "success" if not errors else "warning")
-
-    except Exception as e:
-        logger.exception("Metadata refresh failed")
-        if request.headers.get("HX-Request"):
-            return render_template(
-                "sync/_refresh_metadata.html",
-                error=str(e),
-            )
-        flash(f"Metadata refresh failed: {e}", "error")
-
+    flash(f"Metadata refresh started for {len(doc_refs)} document(s).", "info")
     return redirect(url_for("sync.index"))
+
+
+@bp.route("/refresh-metadata/status")
+@login_required
+def refresh_metadata_status() -> str:
+    """Poll metadata refresh progress (HTMX endpoint)."""
+    return render_template("sync/_refresh_metadata.html", state=_refresh_state)
 
 
 @bp.route("/status")

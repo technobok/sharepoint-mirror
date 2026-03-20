@@ -15,6 +15,7 @@ class SyncRun:
     started_at: str
     completed_at: str | None
     is_full_sync: bool
+    sync_type: str
     files_added: int
     files_modified: int
     files_removed: int
@@ -32,13 +33,14 @@ class SyncRun:
             started_at=row[2],
             completed_at=row[3],
             is_full_sync=bool(row[4]),
-            files_added=row[5],
-            files_modified=row[6],
-            files_removed=row[7],
-            files_unchanged=row[8],
-            files_skipped=row[9],
-            bytes_downloaded=row[10],
-            error_message=row[11],
+            sync_type=row[5],
+            files_added=row[6],
+            files_modified=row[7],
+            files_removed=row[8],
+            files_unchanged=row[9],
+            files_skipped=row[10],
+            bytes_downloaded=row[11],
+            error_message=row[12],
         )
 
     @classmethod
@@ -48,7 +50,7 @@ class SyncRun:
         cursor = db.cursor()
         cursor.execute(
             """
-            SELECT id, status, started_at, completed_at, is_full_sync,
+            SELECT id, status, started_at, completed_at, is_full_sync, sync_type,
                    files_added, files_modified, files_removed, files_unchanged,
                    files_skipped, bytes_downloaded, error_message
             FROM sync_run WHERE id = ?
@@ -59,17 +61,17 @@ class SyncRun:
         return cls.from_row(row) if row else None
 
     @classmethod
-    def create(cls, is_full_sync: bool = False) -> SyncRun:
+    def create(cls, is_full_sync: bool = False, sync_type: str = "sync") -> SyncRun:
         """Create a new sync run."""
         now = datetime.now(UTC).isoformat()
 
         with transaction() as cursor:
             cursor.execute(
                 """
-                INSERT INTO sync_run (status, started_at, is_full_sync)
-                VALUES ('running', ?, ?)
+                INSERT INTO sync_run (status, started_at, is_full_sync, sync_type)
+                VALUES ('running', ?, ?, ?)
                 """,
-                (now, 1 if is_full_sync else 0),
+                (now, 1 if is_full_sync else 0, sync_type),
             )
             row = cursor.execute("SELECT last_insert_rowid()").fetchone()
             assert row is not None
@@ -173,7 +175,7 @@ class SyncRun:
         cursor = db.cursor()
         cursor.execute(
             """
-            SELECT id, status, started_at, completed_at, is_full_sync,
+            SELECT id, status, started_at, completed_at, is_full_sync, sync_type,
                    files_added, files_modified, files_removed, files_unchanged,
                    files_skipped, bytes_downloaded, error_message
             FROM sync_run ORDER BY started_at DESC LIMIT 1
@@ -189,7 +191,7 @@ class SyncRun:
         cursor = db.cursor()
         cursor.execute(
             """
-            SELECT id, status, started_at, completed_at, is_full_sync,
+            SELECT id, status, started_at, completed_at, is_full_sync, sync_type,
                    files_added, files_modified, files_removed, files_unchanged,
                    files_skipped, bytes_downloaded, error_message
             FROM sync_run WHERE status = 'running' ORDER BY started_at DESC LIMIT 1
@@ -215,7 +217,7 @@ class SyncRun:
         cursor = db.cursor()
         cursor.execute(
             """
-            SELECT id, status, started_at, completed_at, is_full_sync,
+            SELECT id, status, started_at, completed_at, is_full_sync, sync_type,
                    files_added, files_modified, files_removed, files_unchanged,
                    files_skipped, bytes_downloaded, error_message
             FROM sync_run ORDER BY started_at DESC LIMIT ? OFFSET ?

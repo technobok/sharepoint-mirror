@@ -24,8 +24,7 @@
             <form action="{{ url_for('sync.refresh_metadata') }}" method="post" style="display:inline"
                   hx-post="{{ url_for('sync.refresh_metadata') }}"
                   hx-target="#refresh-metadata-result"
-                  hx-swap="innerHTML"
-                  hx-indicator="#refresh-metadata-spinner">
+                  hx-swap="innerHTML">
                 <button type="submit" class="outline secondary">
                     Refresh Metadata
                 </button>
