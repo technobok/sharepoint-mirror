@@ -74,6 +74,18 @@
     </div>
     {% endif %}
 
+    {% if metadata %}
+    <div class="metadata-info">
+        <h3>Custom Metadata</h3>
+        <dl>
+            {% for field_name, values in metadata.items()|sort %}
+            <dt>{{ field_name }}</dt>
+            <dd>{{ values|join(', ') }}</dd>
+            {% endfor %}
+        </dl>
+    </div>
+    {% endif %}
+
     <footer>
         <div class="button-group">
             {% if blob %}

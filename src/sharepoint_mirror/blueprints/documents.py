@@ -8,7 +8,7 @@ from openpyxl.styles import Font
 from werkzeug.wrappers import Response
 
 from sharepoint_mirror.blueprints.auth import login_required
-from sharepoint_mirror.models import Document, Drive
+from sharepoint_mirror.models import Document, DocumentMetadata, Drive
 from sharepoint_mirror.services import StorageService
 
 bp = Blueprint("documents", __name__, url_prefix="/documents")
@@ -66,12 +66,14 @@ def view(doc_id: int) -> str:
 
     blob = doc.get_blob()
     drive = Drive.get_by_id(doc.sharepoint_drive_id)
+    metadata = DocumentMetadata.get_for_document(doc.id)
 
     return render_template(
         "documents/view.html",
         document=doc,
         blob=blob,
         drive=drive,
+        metadata=metadata,
     )
 
 
