@@ -311,13 +311,16 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                     pass
 
         # Check schema version matches expected (from migration files)
-        migrations_dir = project_root / "database" / "migrations"
-        expected = get_expected_schema_version(migrations_dir)
-        current = get_schema_version()
-        if expected and current < expected:
-            raise RuntimeError(
-                f"Database schema is at version {current} but version {expected} is required. "
-                f"Back up your database and run: flask --app wsgi migrate-db"
-            )
+        # Skip when running migrate-db or init-db to avoid a catch-22
+        cli_cmd = sys.argv[-1] if sys.argv else ""
+        if cli_cmd not in ("migrate-db", "init-db"):
+            migrations_dir = project_root / "database" / "migrations"
+            expected = get_expected_schema_version(migrations_dir)
+            current = get_schema_version()
+            if expected and current < expected:
+                raise RuntimeError(
+                    f"Database schema is at version {current} but version {expected} is required. "
+                    f"Back up your database and run: flask --app wsgi migrate-db"
+                )
 
     return app
