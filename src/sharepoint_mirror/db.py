@@ -58,7 +58,7 @@ def transaction() -> Generator[apsw.Cursor]:
 def init_db() -> None:
     """Initialize the database with the schema."""
     db = get_db()
-    schema_path = Path(__file__).parent.parent.parent / "database" / "schema.sql"
+    schema_path = _find_database_dir() / "schema.sql"
 
     with open(schema_path) as f:
         # APSW requires iterating over execute() result to run all statements
@@ -93,11 +93,21 @@ def get_expected_schema_version(migrations_dir: Path) -> int:
     return max_version
 
 
+def _find_database_dir() -> Path:
+    """Locate the database/ directory (schema + migrations)."""
+    # Source tree layout: src/sharepoint_mirror/db.py -> ../../database/
+    source_root = Path(__file__).parent.parent.parent
+    if (source_root / "database").is_dir():
+        return source_root / "database"
+    # Installed as package — use CWD (Docker WORKDIR or project root)
+    return Path.cwd() / "database"
+
+
 def migrate_db(migrations_dir: Path | None = None) -> None:
     """Run pending database migrations."""
     current_version = get_schema_version()
     if migrations_dir is None:
-        migrations_dir = Path(__file__).parent.parent.parent / "database" / "migrations"
+        migrations_dir = _find_database_dir() / "migrations"
 
     if not migrations_dir.exists():
         return
