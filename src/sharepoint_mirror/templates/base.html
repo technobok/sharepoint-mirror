@@ -19,6 +19,7 @@
             <ul>
                 <li><a href="{{ url_for('documents.index') }}">Documents</a></li>
                 <li><a href="{{ url_for('sync.index') }}">Sync</a></li>
+                <li><a href="{{ url_for('sql.index') }}">SQL</a></li>
                 {% if g.user %}
                 <li><small>{{ g.user.username }}</small></li>
                 <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>

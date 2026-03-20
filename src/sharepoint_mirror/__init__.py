@@ -263,6 +263,10 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     app.register_blueprint(sync.bp)
     app.register_blueprint(viewer.bp)
 
+    from sharepoint_mirror.blueprints import sql
+
+    app.register_blueprint(sql.bp)
+
     # Initialize Gatekeeper client (if configured)
     gk_db_path = app.config.get("GATEKEEPER_DB_PATH", "")
     gk_url = app.config.get("GATEKEEPER_URL", "")

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}SQL Query - SharePoint Mirror{% endblock %}
+
+{% block content %}
+<h1>SQL Query</h1>
+
+<details>
+    <summary>Schema Reference</summary>
+    <div style="columns: 3; column-gap: 2rem; margin-top: 0.5rem;">
+    {% for table in schema %}
+        <div style="break-inside: avoid; margin-bottom: 0.5rem;">
+            <strong>{{ table.name }}</strong><br>
+            <small>{{ table.columns | join(', ') }}</small>
+        </div>
+    {% endfor %}
+    </div>
+</details>
+
+<form method="post">
+    <textarea name="sql" rows="6" placeholder="SELECT * FROM document LIMIT 10"
+              style="font-family: monospace;">{{ query }}</textarea>
+    <button type="submit">Execute</button>
+</form>
+
+{% if columns %}
+<form method="post" action="{{ url_for('sql.export') }}" style="margin-bottom: 0.5rem;">
+    <input type="hidden" name="sql" value="{{ query }}">
+    <button type="submit" class="outline">Export XLSX</button>
+</form>
+<figure>
+    <table>
+        <thead>
+            <tr>
+            {% for col in columns %}
+                <th>{{ col }}</th>
+            {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in rows %}
+            <tr>
+            {% for val in row %}
+                <td>{{ val }}</td>
+            {% endfor %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</figure>
+{% endif %}
+{% endblock %}
