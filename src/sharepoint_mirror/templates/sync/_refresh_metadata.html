@@ -2,18 +2,22 @@
 <article class="sync-error">
     <p>Metadata refresh error: {{ error }}</p>
 </article>
-{% elif state %}
-    {% if state.running %}
+{% elif run %}
+    {% if run.status == 'running' %}
 <article aria-busy="true"
          hx-get="{{ url_for('sync.refresh_metadata_status') }}"
          hx-trigger="every 2s"
          hx-swap="outerHTML">
-    <p>Refreshing metadata: {{ state.processed }} / {{ state.total }}{% if state.errors %} ({{ state.errors }} errors){% endif %}</p>
-    <progress value="{{ state.processed }}" max="{{ state.total }}"></progress>
+    <p>Refreshing metadata: {{ run.files_modified + run.files_skipped }} / {{ run.files_unchanged }}{% if run.files_skipped %} ({{ run.files_skipped }} errors){% endif %}</p>
+    <progress value="{{ run.files_modified + run.files_skipped }}" max="{{ run.files_unchanged }}"></progress>
 </article>
-    {% elif state.done %}
+    {% elif run.status == 'completed' %}
 <article class="sync-complete">
-    <p>Metadata refreshed for {{ state.total - state.errors }} document(s).{% if state.errors %} {{ state.errors }} error(s).{% endif %}</p>
+    <p>Metadata refreshed for {{ run.files_modified }} document(s).{% if run.files_skipped %} {{ run.files_skipped }} error(s).{% endif %}</p>
+</article>
+    {% elif run.status == 'failed' %}
+<article class="sync-error">
+    <p>Metadata refresh failed: {{ run.error_message }}</p>
 </article>
     {% endif %}
 {% endif %}
