@@ -28,6 +28,9 @@ SITE_PATH = /sites/Documents
 [sync]
 # Background sync interval in seconds (default 300)
 # INTERVAL = 300
+# Metadata refresh interval in seconds (default 1800, 0 = disabled)
+# Worker refreshes listItem.fields for all documents on this interval.
+# METADATA_REFRESH_INTERVAL = 1800
 # Download timeout in seconds
 DOWNLOAD_TIMEOUT = 300
 # Maximum file size in MB (files larger than this will be skipped)
