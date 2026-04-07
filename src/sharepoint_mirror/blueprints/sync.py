@@ -141,49 +141,25 @@ def refresh_metadata() -> str | Response:
         flash("No documents to process.", "warning")
         return redirect(url_for("sync.index"))
 
-    # Capture document info before spawning thread (avoid passing ORM objects)
-    doc_refs = [(doc.id, doc.sharepoint_drive_id, doc.sharepoint_item_id, doc.name) for doc in docs]
-
-    # Create SyncRun record — use files_unchanged to store total count
-    sync_run = SyncRun.create(sync_type="metadata")
-    sync_run.increment_counts(unchanged=len(doc_refs))
-    run_id = sync_run.id
-
     app = current_app._get_current_object()
 
     def run_refresh() -> None:
         with app.app_context():
-            run = SyncRun.get_by_id(run_id)
-            assert run is not None
-            try:
-                service = SyncService()
-                errors = 0
-                for doc_id, drive_id, item_id, name in doc_refs:
-                    try:
-                        service._sync_metadata(doc_id, drive_id, item_id)
-                        run.increment_counts(modified=1)
-                    except Exception as e:
-                        errors += 1
-                        run.increment_counts(skipped=1)
-                        logger.warning("Metadata refresh failed for %s: %s", name, e)
-                run.complete(
-                    files_modified=run.files_modified,
-                    files_skipped=errors,
-                    files_unchanged=len(doc_refs),
-                )
-            except Exception as e:
-                logger.exception("Metadata refresh failed")
-                run.fail(str(e))
+            service = SyncService()
+            service.run_metadata_refresh()
 
-    logger.info("Metadata refresh triggered via web UI (%d documents)", len(doc_refs))
+    logger.info("Metadata refresh triggered via web UI (%d documents)", len(docs))
     threading.Thread(target=run_refresh, daemon=True).start()
 
+    import time
+
+    time.sleep(0.2)  # Brief pause to let the SyncRun record be created
+
     if request.headers.get("HX-Request"):
-        # Re-fetch to get the updated counts
-        run = SyncRun.get_by_id(run_id)
+        run = _get_running_metadata_refresh()
         return render_template("sync/_refresh_metadata.html", run=run)
 
-    flash(f"Metadata refresh started for {len(doc_refs)} document(s).", "info")
+    flash(f"Metadata refresh started for {len(docs)} document(s).", "info")
     return redirect(url_for("sync.index"))
 
 

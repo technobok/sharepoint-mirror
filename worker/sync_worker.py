@@ -55,7 +55,14 @@ def run() -> None:
     with app.app_context():
         _recover_stuck_runs()
 
-    log.info("Sync worker started (interval=%ds)", interval)
+    metadata_interval: int = app.config.get("METADATA_REFRESH_INTERVAL", 1800)
+    last_metadata_refresh = 0.0
+
+    log.info(
+        "Sync worker started (interval=%ds, metadata_refresh_interval=%ds)",
+        interval,
+        metadata_interval,
+    )
 
     while _running:
         with app.app_context():
@@ -75,6 +82,21 @@ def run() -> None:
                         run_result.files_modified,
                         run_result.files_removed,
                     )
+
+                    # Metadata refresh on configurable interval
+                    if (
+                        metadata_interval > 0
+                        and (time.monotonic() - last_metadata_refresh) >= metadata_interval
+                    ):
+                        if not SyncRun.is_sync_in_progress():
+                            log.info("Starting periodic metadata refresh")
+                            meta_run = service.run_metadata_refresh()
+                            log.info(
+                                "Metadata refresh completed: %d modified, %d errors",
+                                meta_run.files_modified,
+                                meta_run.files_skipped,
+                            )
+                            last_metadata_refresh = time.monotonic()
             except Exception:
                 log.exception("Error in sync worker loop")
 

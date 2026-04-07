@@ -54,6 +54,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         SHAREPOINT_LIBRARY_NAME="",
         # Sync defaults
         SYNC_INTERVAL=300,
+        METADATA_REFRESH_INTERVAL=1800,
         SYNC_DOWNLOAD_TIMEOUT=300,
         SYNC_MAX_FILE_SIZE_MB=100,
         SYNC_INCLUDE_EXTENSIONS="",
@@ -125,6 +126,9 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
 
             if config.has_section("sync"):
                 app.config["SYNC_INTERVAL"] = config.getint("sync", "INTERVAL", fallback=300)
+                app.config["METADATA_REFRESH_INTERVAL"] = config.getint(
+                    "sync", "METADATA_REFRESH_INTERVAL", fallback=1800
+                )
                 app.config["SYNC_DOWNLOAD_TIMEOUT"] = config.getint(
                     "sync", "DOWNLOAD_TIMEOUT", fallback=300
                 )

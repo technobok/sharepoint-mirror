@@ -670,6 +670,42 @@ class SyncService:
         self._sync_metadata(existing.id, existing.sharepoint_drive_id, item.id)
         stats.modified += 1
 
+    def run_metadata_refresh(self) -> SyncRun:
+        """Refresh metadata for all non-deleted documents.
+
+        Creates a SyncRun with sync_type='metadata', fetches listItem.fields
+        for each document, and returns the completed run.
+        """
+        docs = Document.get_all(include_deleted=False)
+        doc_refs = [
+            (doc.id, doc.sharepoint_drive_id, doc.sharepoint_item_id, doc.name)
+            for doc in docs
+        ]
+
+        sync_run = SyncRun.create(sync_type="metadata")
+        sync_run.increment_counts(unchanged=len(doc_refs))
+
+        try:
+            errors = 0
+            for doc_id, drive_id, item_id, name in doc_refs:
+                try:
+                    self._sync_metadata(doc_id, drive_id, item_id)
+                    sync_run.increment_counts(modified=1)
+                except Exception as e:
+                    errors += 1
+                    sync_run.increment_counts(skipped=1)
+                    logger.warning("Metadata refresh failed for %s: %s", name, e)
+            sync_run.complete(
+                files_modified=sync_run.files_modified,
+                files_skipped=errors,
+                files_unchanged=len(doc_refs),
+            )
+        except Exception as e:
+            logger.exception("Metadata refresh failed")
+            sync_run.fail(str(e))
+
+        return sync_run
+
     def get_status(self) -> dict:
         """Get current sync status."""
         latest_run = SyncRun.get_latest()
